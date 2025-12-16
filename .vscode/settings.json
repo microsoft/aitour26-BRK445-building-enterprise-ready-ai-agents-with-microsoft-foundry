@@ -1,1 +1,6 @@
-{}
+{
+    "dev.containers.mountWslgRuntimeDir": false,
+    "dev.containers.mountWaylandSocket": false,
+    "remote.containers.mountWslgRuntimeDir": false,
+    "remote.containers.mountWaylandSocket": false
+}

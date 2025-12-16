@@ -43,6 +43,27 @@ The devcontainer is configured to:
 - ✅ Install .NET 9 SDK and Aspire workloads
 - ✅ Install Aspire CLI tool
 
+#### Troubleshooting (Windows + WSL + Docker Desktop)
+
+If starting the devcontainer fails with an error like:
+
+`accessing specified distro mount service: stat /run/guest-services/distro-services/ubuntu.sock: no such file or directory`
+
+it means Docker Desktop can’t bind-mount a WSL path (for example `\\wsl.localhost\Ubuntu\...`) because the Docker Desktop WSL “distro mount service” is not available.
+
+Fix options:
+
+- **Preferred:** In **Docker Desktop** → **Settings** → **Resources** → **WSL integration**:
+  - Enable WSL integration
+  - Enable integration for your distro (for example **Ubuntu**)
+  - Apply & Restart Docker Desktop
+
+- **Workaround:** Disable Dev Containers’ WSLg/Wayland socket mounting (this repo sets workspace defaults in `.vscode/settings.json`), since the BRK445 devcontainer does not require GUI forwarding.
+
+After applying the fix, you can verify the mount service exists by running in a terminal:
+
+- `wsl -d docker-desktop -e sh -lc "ls -la /run/guest-services/distro-services"`
+
 ## Technologies used
 
 - C# / .NET 9 / .NET Aspire for orchestration
