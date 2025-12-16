@@ -1,10 +1,9 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/dotnet
 {
-	"name": "BRK445 - Python .NET 10 Aspire",
-	"image": "mcr.microsoft.com/devcontainers/dotnet:latest",
+	"name": "BRK445 - .NET 10 Aspire",
+	"image": "mcr.microsoft.com/devcontainers/dotnet:1-10.0",
 	"features": {
-		"ghcr.io/devcontainers/features/python:1": {},
 		"ghcr.io/devcontainers/features/azure-cli:1": {
 			"version": "latest"
 		},
@@ -26,9 +25,7 @@
 		1433 // SQL Server
 	],
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "python3 -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt && curl -sSL https://aspire.dev/install.sh | bash",
-	// Use 'postStartCommand' to fix Docker socket permissions
-	"postStartCommand": "sudo chown root:docker /var/run/docker.sock 2>/dev/null || true",
+	"postCreateCommand": "curl -sSL https://aspire.dev/install.sh | bash",
 	// Configure tool-specific properties.
 	"customizations": {
 		"vscode": {
@@ -37,12 +34,8 @@
 				"ms-dotnettools.csdevkit",
 				"ms-dotnettools.vscode-dotnet-runtime",
 				"ms-azuretools.vscode-docker",
-				"ms-mssql.mssql",
-				"ms-python.python"
-			],
-			"settings": {
-				"python.defaultInterpreterPath": "./.venv/bin/python"
-			}
+				"ms-mssql.mssql"
+			]
 		}
 	},
 	// Minimum machine requirements for GitHub Codespaces
@@ -52,6 +45,10 @@
 		"storage": "32gb"
 	},
 	// Required for Docker-in-Docker
+	// Docker-in-Docker is enabled for this devcontainer to allow running Docker
+	// inside the container. This requires a privileged container; keep in mind
+	// that when running on Windows/WSL Docker Desktop the host must expose
+	// the required guest services (or you should run VS Code from the WSL side).
 	"privileged": true,
 	"mounts": [
 		"source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
