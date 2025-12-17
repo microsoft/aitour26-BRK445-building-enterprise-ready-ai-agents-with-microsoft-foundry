@@ -1,7 +1,6 @@
 #pragma warning disable CS8604
 
 using Aspire.Hosting.Azure;
-using System;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
@@ -9,13 +8,9 @@ var builder = DistributedApplication.CreateBuilder(args);
 // SECTION 1: INFRASTRUCTURE RESOURCES
 // ============================================================================
 
-// SQL Server and database configuration
-var sql = builder.AddSqlServer("sql")
-    .WithLifetime(ContainerLifetime.Persistent);
-
-var productsDb = sql
-    .WithDataVolume()
-    .AddDatabase("productsDb");
+// SQLite database configuration
+// The database file will be stored in the DataService project directory
+var productsDb = builder.AddSqlite("productsDb");
 
 // Microsoft Foundry connection string (OpenAI) - used for chat and embeddings
 IResourceBuilder<IResourceWithConnectionString>? microsoftfoundrycnnstring;
@@ -24,6 +19,9 @@ var embeddingsDeploymentName = "text-embedding-3-small";
 
 // Microsoft Foundry project connection - used for agent services
 IResourceBuilder<IResourceWithConnectionString>? microsoftfoundryproject;
+
+// TenantId - used for agent services
+IResourceBuilder<IResourceWithConnectionString>? tenantId;
 
 IResourceBuilder<AzureAIFoundryDeploymentResource> gpt5mini = null;
 IResourceBuilder<AzureAIFoundryDeploymentResource> embeddingsDeployment = null;
@@ -183,6 +181,9 @@ store.WithReference(appInsights);
 microsoftfoundryproject = builder.AddConnectionString("microsoftfoundryproject");
 microsoftfoundrycnnstring = builder.AddConnectionString("microsoftfoundrycnnstring");
 
+// Configure Azure Tenant Id for all agent services
+tenantId = builder.AddConnectionString("tenantId");
+
 // Add AI configuration to Products service
 dataservice
     .WithReference(microsoftfoundrycnnstring)
@@ -193,51 +194,61 @@ dataservice
 analyzePhotoService
     .WithReference(microsoftfoundryproject)
     .WithReference(microsoftfoundrycnnstring)
+    .WithReference(tenantId)
     .WithEnvironment("AI_ChatDeploymentName", chatDeploymentName);
 
 customerInformationService
     .WithReference(microsoftfoundryproject)
     .WithReference(microsoftfoundrycnnstring)
+    .WithReference(tenantId)
     .WithEnvironment("AI_ChatDeploymentName", chatDeploymentName);
 
 toolReasoningService
     .WithReference(microsoftfoundryproject)
     .WithReference(microsoftfoundrycnnstring)
+    .WithReference(tenantId)
     .WithEnvironment("AI_ChatDeploymentName", chatDeploymentName);
 
 inventoryService
     .WithReference(microsoftfoundryproject)
     .WithReference(microsoftfoundrycnnstring)
+    .WithReference(tenantId)
     .WithEnvironment("AI_ChatDeploymentName", chatDeploymentName);
 
 matchmakingService
     .WithReference(microsoftfoundryproject)
     .WithReference(microsoftfoundrycnnstring)
+    .WithReference(tenantId)
     .WithEnvironment("AI_ChatDeploymentName", chatDeploymentName);
 
 locationService
     .WithReference(microsoftfoundryproject)
     .WithReference(microsoftfoundrycnnstring)
+    .WithReference(tenantId)
     .WithEnvironment("AI_ChatDeploymentName", chatDeploymentName);
 
 navigationService
     .WithReference(microsoftfoundryproject)
     .WithReference(microsoftfoundrycnnstring)
+    .WithReference(tenantId)
     .WithEnvironment("AI_ChatDeploymentName", chatDeploymentName);
 
 productSearchService
     .WithReference(microsoftfoundryproject)
     .WithReference(microsoftfoundrycnnstring)
+    .WithReference(tenantId)
     .WithEnvironment("AI_ChatDeploymentName", chatDeploymentName);
 
 singleAgentDemo
     .WithReference(microsoftfoundryproject)
     .WithReference(microsoftfoundrycnnstring)
+    .WithReference(tenantId)
     .WithEnvironment("AI_ChatDeploymentName", chatDeploymentName);
 
 multiAgentDemo
     .WithReference(microsoftfoundryproject)
     .WithReference(microsoftfoundrycnnstring)
+    .WithReference(tenantId)
     .WithEnvironment("AI_ChatDeploymentName", chatDeploymentName);
 
 // ============================================================================

@@ -16,13 +16,12 @@ builder.Services.AddSwaggerGen();
 // Add DataServiceClient for accessing DataService endpoints
 builder.Services.AddDataServiceClient("https+http://dataservice", builder.Environment.IsDevelopment());
 
+// Register MAF Foundry agents (Microsoft Foundry)
+builder.AddMAFFoundryAgents();
+
 // Register MAF agent providers using new extension methods
-var microsoftFoundryProjectConnection = builder.Configuration.GetConnectionString("microsoftfoundryproject");
 var microsoftFoundryCnnString = builder.Configuration.GetConnectionString("microsoftfoundrycnnstring");
 var chatDeploymentName = builder.Configuration["AI_ChatDeploymentName"] ?? "gpt-5-mini";
-
-// Register MAF Foundry agents (Microsoft Foundry)
-builder.AddMAFFoundryAgents(microsoftFoundryProjectConnection);
 
 // Register MAF Local agents (locally created with IChatClient)
 // Register IChatClient for MAF Local agents

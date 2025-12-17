@@ -4,6 +4,7 @@ using Microsoft.Agents.AI;
 using Microsoft.Agents.AI.Hosting;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using ZavaAgentsMetadata;
@@ -17,16 +18,19 @@ namespace ZavaMAFFoundry;
 public class MAFFoundryAgentProvider
 {
     private readonly AIProjectClient _projectClient;
-
-    public MAFFoundryAgentProvider(string microsoftFoundryProjectEndpoint)
+    public MAFFoundryAgentProvider(string microsoftFoundryProjectEndpoint, string tenantId = "")
     {
-        var tenantId = "eebf5abf-4444-4193-992e-c2f812a4ef4f";
-
-        var cred = new DefaultAzureCredential(new DefaultAzureCredentialOptions { TenantId = tenantId });
+        var credentialOptions = new DefaultAzureCredentialOptions();
+        if (!string.IsNullOrEmpty(tenantId))
+        {
+            credentialOptions = new DefaultAzureCredentialOptions()
+            { TenantId = tenantId };
+        }
+        var tokenCredential = new DefaultAzureCredential(options: credentialOptions);
 
         _projectClient = new(
             endpoint: new Uri(microsoftFoundryProjectEndpoint),
-            tokenProvider: cred);
+            tokenProvider: tokenCredential);
     }
 
     /// <summary>
@@ -42,7 +46,7 @@ public class MAFFoundryAgentProvider
         return _projectClient.GetAIAgent(name: agentName, tools: tools);
     }
 
-    public AIAgent GetOrCreateAIAgent(string agentName, 
+    public AIAgent GetOrCreateAIAgent(string agentName,
         string model = "",
         string agentInstructions = "", List<AITool> tools = null)
     {
@@ -59,11 +63,11 @@ public class MAFFoundryAgentProvider
         catch
         {
         }
-        
+
         agent ??= _projectClient.CreateAIAgent(
-                name: agentName, 
+                name: agentName,
                 model: model,
-                instructions: agentInstructions, 
+                instructions: agentInstructions,
                 tools: tools);
 
         return agent;
@@ -84,24 +88,34 @@ public static class MAFFoundryAgentExtensions
     /// <param name="builder">The web application builder.</param>
     /// <param name="projectEndpoint">The Microsoft Foundry project endpoint.</param>
     public static WebApplicationBuilder AddMAFFoundryAgents(
-        this WebApplicationBuilder builder,
-        string projectEndpoint)
+        this WebApplicationBuilder builder)
+        // , string projectEndpoint, string tenantId = "")
     {
+
+        // Register MAF agent providers using new extension methods
+        var projectEndpoint = builder.Configuration.GetConnectionString("microsoftfoundryproject");
+        var tenantId = builder.Configuration.GetConnectionString("tenantId");
+
         // Register the provider as singleton
-        builder.Services.AddSingleton(_ => new MAFFoundryAgentProvider(projectEndpoint));
+        builder.Services.AddSingleton(_ =>
+        new MAFFoundryAgentProvider(projectEndpoint, tenantId));
 
         var logger = builder.Services.BuildServiceProvider().GetService<ILoggerFactory>()?.
             CreateLogger("MAFFoundryAgentExtensions");
 
         logger?.LogInformation("Registering MAF Foundry agents from endpoint: {Endpoint}", projectEndpoint);
 
-        var tenantId = "eebf5abf-4444-4193-992e-c2f812a4ef4f";
-
-        var cred = new DefaultAzureCredential(new DefaultAzureCredentialOptions { TenantId = tenantId });
+        var credentialOptions = new DefaultAzureCredentialOptions();
+        if (!string.IsNullOrEmpty(tenantId))
+        { 
+            credentialOptions = new DefaultAzureCredentialOptions() 
+            { TenantId = tenantId }; 
+        }
+        var tokenCredential = new DefaultAzureCredential(options: credentialOptions);
 
         AIProjectClient projectClient = new(
             endpoint: new Uri(projectEndpoint),
-            tokenProvider: cred);
+            tokenProvider: tokenCredential);
 
         foreach (var agentType in AgentMetadata.AllAgents)
         {

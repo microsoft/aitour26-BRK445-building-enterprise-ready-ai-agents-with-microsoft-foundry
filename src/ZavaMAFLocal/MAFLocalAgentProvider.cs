@@ -5,8 +5,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Diagnostics.Eventing.Reader;
 using ZavaAgentsMetadata;
 
 namespace ZavaMAFLocal;
@@ -17,8 +15,6 @@ namespace ZavaMAFLocal;
 /// </summary>
 public class MAFLocalAgentProvider
 {
-    private readonly IChatClient _chatClient;
-    private readonly Dictionary<string, AIAgent> _cachedAgents = new();
     private readonly IServiceProvider _serviceProvider;
 
     /// <summary>
@@ -29,7 +25,6 @@ public class MAFLocalAgentProvider
         IServiceProvider serviceProvider,
         IChatClient chatClient)
     {
-        _chatClient = chatClient ?? throw new ArgumentNullException(nameof(chatClient));
         _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
     }
 

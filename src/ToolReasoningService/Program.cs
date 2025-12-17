@@ -14,11 +14,8 @@ builder.Services.AddSwaggerGen();
 // Add DataServiceClient for accessing DataService endpoints
 builder.Services.AddDataServiceClient("https+http://dataservice");
 
-// Register MAF agent providers using new extension methods
-var microsoftFoundryProjectConnection = builder.Configuration.GetConnectionString("microsoftfoundryproject");
-
 // Register MAF Foundry agents (Microsoft Foundry)
-builder.AddMAFFoundryAgents(microsoftFoundryProjectConnection);
+builder.AddMAFFoundryAgents();
 
 var microsoftFoundryCnnString = builder.Configuration.GetConnectionString("microsoftfoundrycnnstring");
 var chatDeploymentName = builder.Configuration["AI_ChatDeploymentName"] ?? "gpt-5-mini";

@@ -1,12 +1,9 @@
-using Azure.AI.OpenAI;
 using Azure.Identity;
 using Microsoft.Extensions.AI;
-using OpenAI;
-using OpenAI.Embeddings;
 using DataService.Endpoints;
 using DataService.Memory;
-using System.ClientModel;
 using ZavaDatabaseInitialization;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,7 +15,9 @@ builder.AddServiceDefaults();
 builder.Services.AddProblemDetails();
 
 // Add DbContext service
-builder.AddSqlServerDbContext<Context>("productsDb");
+var connectionString = builder.Configuration.GetConnectionString("productsDb") ?? "Data Source=Database.db";
+builder.Services.AddDbContext<Context>(options =>
+    options.UseSqlite(connectionString));
 
 
 var azureOpenAIConnectionName = "microsoftfoundrycnnstring";
