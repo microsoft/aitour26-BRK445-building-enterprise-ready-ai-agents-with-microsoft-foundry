@@ -1,64 +1,157 @@
+using Microsoft.Agents.AI.DevUI;
 using SingleAgentDemo.Services;
-using ZavaAgentFxAgentsProvider;
-using ZavaSemanticKernelProvider;
+using ZavaMAFLocal;
+using ZavaMAFFoundry;
+using DataServiceClient;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
-// Add services to the container.
+// Add services to the container
 builder.Services.AddControllers();
-
-// Add Swagger for API documentation
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Register both agent providers - they will be available for their respective controllers
-var openAiConnection = builder.Configuration.GetValue<string>("ConnectionStrings:aifoundry");
-var chatDeploymentName = builder.Configuration["AI_ChatDeploymentName"] ?? "gpt-5-mini";
-builder.Services.AddSingleton(sp =>
-    new SemanticKernelProvider(openAiConnection, chatDeploymentName));
+// Add DataServiceClient for accessing DataService endpoints
+builder.Services.AddDataServiceClient("https+http://dataservice");
 
-builder.Services.AddSingleton(sp =>
-{
-    var config = sp.GetService<IConfiguration>();
-    var aiFoundryProjectConnection = config!.GetConnectionString("aifoundryproject");
-    return new AgentFxAgentProvider(aiFoundryProjectConnection!);
-});
-
-builder.Services.AddSingleton(sp => builder.Configuration);
-
-// Register service layer implementations for external services
-builder.Services.AddHttpClient<AnalyzePhotoService>(
-    client => client.BaseAddress = new Uri("https+http://analyzephotoservice"));
-
-builder.Services.AddHttpClient<CustomerInformationService>(
-    client => client.BaseAddress = new Uri("https+http://customerinformationservice"));
-
+builder.Services.AddScoped<ToolReasoningService>();
 builder.Services.AddHttpClient<ToolReasoningService>(
-    client => client.BaseAddress = new Uri("https+http://toolreasoningservice"));
+    static client => client.BaseAddress = new("http+https://toolreasoningservice"));
 
+builder.Services.AddScoped<InventoryService>();
 builder.Services.AddHttpClient<InventoryService>(
-    client => client.BaseAddress = new Uri("https+http://inventoryservice"));
+    static client => client.BaseAddress = new("http+https://inventoryservice"));
+// Add DataServiceClient for accessing DataService endpoints
+builder.Services.AddDataServiceClient("https+http://dataservice", builder.Environment.IsDevelopment());
 
-builder.Services.AddHttpClient<ProductSearchService>(
-    client => client.BaseAddress = new Uri("https+http://productsearchservice"));
+// Register MAF Foundry agents (Microsoft Foundry)
+builder.AddMAFFoundryAgents();
+
+var microsoftFoundryCnnString = builder.Configuration.GetConnectionString("microsoftfoundrycnnstring");
+var chatDeploymentName = builder.Configuration["AI_ChatDeploymentName"] ?? "gpt-5-mini";
+
+builder.AddAzureOpenAIClient(connectionName: "microsoftfoundrycnnstring",
+    configureSettings: settings =>
+    {
+        if (string.IsNullOrEmpty(settings.Key))
+        {
+            settings.Credential = new Azure.Identity.DefaultAzureCredential();
+        }
+    }).AddChatClient(chatDeploymentName);
+
+// Register MAF Local agents (locally created with IChatClient)
+builder.AddMAFLocalAgents();
+
+// Register HTTP clients for external services (used by LLM direct call and DirectCall modes)
+RegisterHttpClients(builder);
+
+// Register services for OpenAI responses and conversations (required for DevUI)
+builder.Services.AddOpenAIResponses();
+builder.Services.AddOpenAIConversations();
+
+// Add DevUI for agent debugging and visualization
+builder.AddDevUI();
 
 var app = builder.Build();
 
 app.MapDefaultEndpoints();
 
-// Configure the HTTP request pipeline.
+// Health logging endpoint for troubleshooting
+app.MapGet("/health/log", (ILogger<Program> logger, IConfiguration config) =>
+{
+    logger.LogInformation("SingleAgentDemo health/log requested");
+    var appInsights = config["APPLICATIONINSIGHTS_CONNECTION_STRING"] ?? config["appinsights"] ?? "<not-set>";
+    var foundryCnn = config.GetConnectionString("microsoftfoundrycnnstring") ?? "<not-set>";
+    var foundryProject = config.GetConnectionString("microsoftfoundryproject") ?? "<not-set>";
+    var env = config["ASPNETCORE_ENVIRONMENT"] ?? "<unknown>";
+
+    logger.LogInformation("SingleAgentDemo Config - Env: {Env}, AppInsights: {AppInsights}, FoundryCnn: {FoundryCnn}, FoundryProject: {FoundryProject}", env, appInsights, foundryCnn, foundryProject);
+
+    return Results.Ok(new {
+        service = "singleagentdemo",
+        env,
+        appInsights = string.IsNullOrEmpty(appInsights) ? "<not-set>" : "set",
+        microsoftFoundryConnection = string.IsNullOrEmpty(foundryCnn) ? "<not-set>" : "set",
+        microsoftFoundryProject = string.IsNullOrEmpty(foundryProject) ? "<not-set>" : "set"
+    });
+});
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+
+    // Map DevUI endpoints for agent debugging (development only)
+    app.MapOpenAIResponses();
+    app.MapOpenAIConversations();
+    app.MapDevUI();
 }
 
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();
+
+/// <summary>
+/// Registers HTTP clients for external service communication (LLM direct call and DirectCall modes).
+/// </summary>
+static void RegisterHttpClients(WebApplicationBuilder builder)
+{
+    if (builder.Environment.IsDevelopment())
+    {
+        builder.Services.AddHttpClient<AnalyzePhotoService>(
+            client => client.BaseAddress = new Uri("https+http://analyzephotoservice"))
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+            {
+                ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+            });
+
+        builder.Services.AddHttpClient<CustomerInformationService>(
+            client => client.BaseAddress = new Uri("https+http://customerinformationservice"))
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+            {
+                ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+            });
+
+        builder.Services.AddHttpClient<ToolReasoningService>(
+            client => client.BaseAddress = new Uri("https+http://toolreasoningservice"))
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+            {
+                ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+            });
+
+        builder.Services.AddHttpClient<InventoryService>(
+            client => client.BaseAddress = new Uri("https+http://inventoryservice"))
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+            {
+                ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+            });
+
+        builder.Services.AddHttpClient<ProductSearchService>(
+            client => client.BaseAddress = new Uri("https+http://productsearchservice"))
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+            {
+                ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+            });
+    }
+    else
+    {
+        builder.Services.AddHttpClient<AnalyzePhotoService>(
+            client => client.BaseAddress = new Uri("https+http://analyzephotoservice"));
+
+        builder.Services.AddHttpClient<CustomerInformationService>(
+            client => client.BaseAddress = new Uri("https+http://customerinformationservice"));
+
+        builder.Services.AddHttpClient<ToolReasoningService>(
+            client => client.BaseAddress = new Uri("https+http://toolreasoningservice"));
+
+        builder.Services.AddHttpClient<InventoryService>(
+            client => client.BaseAddress = new Uri("https+http://inventoryservice"));
+
+        builder.Services.AddHttpClient<ProductSearchService>(
+            client => client.BaseAddress = new Uri("https+http://productsearchservice"));
+    }
+}

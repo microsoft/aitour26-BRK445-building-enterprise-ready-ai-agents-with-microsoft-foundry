@@ -1,14 +1,9 @@
-#pragma warning disable SKEXP0110
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Agents.AI;
-using Microsoft.Extensions.AI;
-using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.Agents.AzureAI;
-using Microsoft.SemanticKernel.ChatCompletion;
+using Microsoft.AspNetCore.Mvc;
 using SharedEntities;
-using System.Collections.Generic;
-using System.Text;
 using System.Text.Json;
+using ZavaAgentsMetadata;
+using ZavaMAFLocal;
 
 namespace NavigationService.Controllers;
 
@@ -17,56 +12,58 @@ namespace NavigationService.Controllers;
 public class NavigationController : ControllerBase
 {
     private readonly ILogger<NavigationController> _logger;
-    private readonly AzureAIAgent _skAgent;
     private readonly AIAgent _agentFxAgent;
-    private readonly IChatClient _chatClient;
 
     public NavigationController(
         ILogger<NavigationController> logger,
-        AzureAIAgent skAgent,
-        AIAgent agentFxAgent,
-        IChatClient chatClient)
+        MAFLocalAgentProvider localAgentProvider)
     {
         _logger = logger;
-        _skAgent = skAgent;
-        _agentFxAgent = agentFxAgent;
-        _chatClient = chatClient;
+        _agentFxAgent = localAgentProvider.GetAgentByName(AgentMetadata.GetAgentName(AgentType.NavigationAgent));
     }
 
     [HttpPost("directions/llm")]
     public async Task<ActionResult<NavigationInstructions>> GenerateDirectionsLlmAsync([FromBody] DirectionsRequest request, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("[LLM] Generating directions from {From} to {To}", FormatLocation(request.From), FormatLocation(request.To));
+        _logger.LogInformation($"{AgentMetadata.LogPrefixes.Llm} Generating directions from {{From}} to {{To}}", FormatLocation(request.From), FormatLocation(request.To));
 
+        // LLM endpoint uses MAF under the hood since we removed SK
         return await GenerateDirectionsAsync(
             request,
-            InvokeLlmAsync,
-            "[LLM]",
+            InvokeAgentFrameworkAsync,
+            AgentMetadata.LogPrefixes.Llm,
             cancellationToken);
     }
 
-    [HttpPost("directions/sk")]
-    public async Task<ActionResult<NavigationInstructions>> GenerateDirectionsSkAsync([FromBody] DirectionsRequest request, CancellationToken cancellationToken)
+    [HttpPost("directions/maf")]  // Using constant AgentMetadata.FrameworkIdentifiers.Maf
+    public async Task<ActionResult<NavigationInstructions>> GenerateDirectionsMAFAsync([FromBody] DirectionsRequest request, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("[SK] Generating directions from {From} to {To}", FormatLocation(request.From), FormatLocation(request.To));
-
-        return await GenerateDirectionsAsync(
-            request,
-            InvokeSemanticKernelAsync,
-            "[SK]",
-            cancellationToken);
-    }
-
-    [HttpPost("directions/agentfx")]
-    public async Task<ActionResult<NavigationInstructions>> GenerateDirectionsAgentFxAsync([FromBody] DirectionsRequest request, CancellationToken cancellationToken)
-    {
-        _logger.LogInformation("[AgentFx] Generating directions from {From} to {To}", FormatLocation(request.From), FormatLocation(request.To));
+        _logger.LogInformation($"{AgentMetadata.LogPrefixes.Maf} Generating directions from {{From}} to {{To}}", FormatLocation(request.From), FormatLocation(request.To));
 
         return await GenerateDirectionsAsync(
             request,
             InvokeAgentFrameworkAsync,
-            "[AgentFx]",
+            AgentMetadata.LogPrefixes.Maf,
             cancellationToken);
+    }
+
+    [HttpPost("directions/directcall")]
+    public ActionResult<NavigationInstructions> GenerateDirectionsDirectCallAsync([FromBody] DirectionsRequest request)
+    {
+        if (request is null)
+        {
+            return BadRequest("Request payload is required.");
+        }
+
+        if (request.From is null || request.To is null)
+        {
+            return BadRequest("Both origin and destination locations are required.");
+        }
+
+        _logger.LogInformation("[DirectCall] Generating directions from {From} to {To}", FormatLocation(request.From), FormatLocation(request.To));
+
+        // DirectCall mode bypasses AI orchestration and returns fallback response immediately
+        return Ok(BuildFallbackInstructions(request));
     }
 
     private async Task<ActionResult<NavigationInstructions>> GenerateDirectionsAsync(
@@ -111,26 +108,6 @@ public class NavigationController : ControllerBase
     public IActionResult Health()
     {
         return Ok(new { Status = "Healthy", Service = "NavigationService" });
-    }
-
-    private async Task<string> InvokeLlmAsync(string prompt, CancellationToken cancellationToken)
-    {
-        var response = await _chatClient.GetResponseAsync(prompt, cancellationToken: cancellationToken);
-        return response.Text ?? string.Empty;
-    }
-
-    private async Task<string> InvokeSemanticKernelAsync(string prompt, CancellationToken cancellationToken)
-    {
-        var sb = new StringBuilder();
-        AzureAIAgentThread agentThread = new(_skAgent.Client);
-
-        ChatMessageContent message = new(AuthorRole.User, prompt);
-        await foreach (ChatMessageContent response in _skAgent.InvokeAsync(message, agentThread).WithCancellation(cancellationToken))
-        {
-            sb.Append(response.Content);
-        }
-
-        return sb.ToString();
     }
 
     private async Task<string> InvokeAgentFrameworkAsync(string prompt, CancellationToken cancellationToken)

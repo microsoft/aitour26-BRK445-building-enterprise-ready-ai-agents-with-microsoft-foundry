@@ -23,12 +23,10 @@ properties:
     secrets:
       - name: applicationinsights-connection-string
         value: '{{ .Env.APPINSIGHTS_APPINSIGHTSCONNECTIONSTRING }}'
-      - name: connectionstrings--aifoundry
-        value: '{{ .Env.AIFOUNDRY_CONNECTIONSTRING }}'
-      - name: connectionstrings--aifoundryproject
-        value: '{{ securedParameter "aifoundryproject" }}'
-      - name: connectionstrings--inventoryagentid
-        value: '{{ securedParameter "inventoryagentid" }}'
+      - name: connectionstrings--microsoftfoundrycnnstring
+        value: '{{ securedParameter "microsoftfoundrycnnstring" }}'
+      - name: connectionstrings--microsoftfoundryproject
+        value: '{{ securedParameter "microsoftfoundryproject" }}'
   template:
     containers:
       - image: {{ .Image }}
@@ -40,6 +38,10 @@ properties:
             value: gpt-5-mini
           - name: ASPNETCORE_FORWARDEDHEADERS_ENABLED
             value: "true"
+          - name: DATASERVICE_HTTP
+            value: http://dataservice.{{ .Env.AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN }}
+          - name: DATASERVICE_HTTPS
+            value: https://dataservice.{{ .Env.AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN }}
           - name: HTTP_PORTS
             value: '{{ targetPortOrDefault 0 }}'
           - name: OTEL_DOTNET_EXPERIMENTAL_OTLP_EMIT_EVENT_LOG_ATTRIBUTES
@@ -48,14 +50,16 @@ properties:
             value: "true"
           - name: OTEL_DOTNET_EXPERIMENTAL_OTLP_RETRY
             value: in_memory
+          - name: services__dataservice__http__0
+            value: http://dataservice.{{ .Env.AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN }}
+          - name: services__dataservice__https__0
+            value: https://dataservice.{{ .Env.AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN }}
           - name: APPLICATIONINSIGHTS_CONNECTION_STRING
             secretRef: applicationinsights-connection-string
-          - name: ConnectionStrings__aifoundry
-            secretRef: connectionstrings--aifoundry
-          - name: ConnectionStrings__aifoundryproject
-            secretRef: connectionstrings--aifoundryproject
-          - name: ConnectionStrings__inventoryagentid
-            secretRef: connectionstrings--inventoryagentid
+          - name: ConnectionStrings__microsoftfoundrycnnstring
+            secretRef: connectionstrings--microsoftfoundrycnnstring
+          - name: ConnectionStrings__microsoftfoundryproject
+            secretRef: connectionstrings--microsoftfoundryproject
     scale:
       minReplicas: 1
 tags:

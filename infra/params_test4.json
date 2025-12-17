@@ -1,0 +1,13 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "resourcePrefix": { "value": "brk445-test4" },
+    "location": { "value": "eastus2" },
+    "sqlAdminUsername": { "value": "sqladmin" },
+    "sqlAdminPassword": { "value": "SecureP@ssw0rd123!" },
+    "modelName": { "value": "text-embedding-3-small" },
+    "modelVersion": { "value": "1" },
+    "modelCapacity": { "value": 1 }
+  }
+}

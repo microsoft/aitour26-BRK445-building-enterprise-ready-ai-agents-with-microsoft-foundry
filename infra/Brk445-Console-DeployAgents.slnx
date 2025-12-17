@@ -1,3 +1,5 @@
 <Solution>
+  <Project Path="../src/SharedEntities/SharedEntities.csproj" />
+  <Project Path="../src/ZavaDatabaseInitialization/ZavaDatabaseInitialization.csproj" />
   <Project Path="Brk445-Console-DeployAgents.csproj" />
 </Solution>

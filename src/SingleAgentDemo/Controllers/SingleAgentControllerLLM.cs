@@ -1,11 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
-using SingleAgentDemo.Models;
+using SharedEntities;
 using SingleAgentDemo.Services;
+using ZavaAgentsMetadata;
 
 namespace SingleAgentDemo.Controllers;
 
 [ApiController]
-[Route("api/singleagent/llm")]
+[Route("api/singleagent/llm")]  // Using constant AgentMetadata.FrameworkIdentifiers.Llm
 public class SingleAgentControllerLLM : ControllerBase
 {
     private readonly ILogger<SingleAgentControllerLLM> _logger;
@@ -28,10 +29,10 @@ public class SingleAgentControllerLLM : ControllerBase
         _inventoryService = inventoryService;
 
         // Set framework to LLM for all agent services
-        _analyzePhotoService.SetFramework("llm");
-        _customerInformationService.SetFramework("llm");
-        _toolReasoningService.SetFramework("llm");
-        _inventoryService.SetFramework("llm");
+        _analyzePhotoService.SetFramework(AgentMetadata.FrameworkIdentifiers.Llm);
+        _customerInformationService.SetFramework(AgentMetadata.FrameworkIdentifiers.Llm);
+        _toolReasoningService.SetFramework(AgentMetadata.FrameworkIdentifiers.Llm);
+        _inventoryService.SetFramework(AgentMetadata.FrameworkIdentifiers.Llm);
     }
 
     [HttpPost("analyze")]

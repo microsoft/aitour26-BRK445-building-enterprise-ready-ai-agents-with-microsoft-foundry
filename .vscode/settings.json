@@ -1,4 +1,6 @@
 {
-    "python-envs.defaultEnvManager": "ms-python.python:system",
-    "python-envs.pythonProjects": []
+    "dev.containers.mountWslgRuntimeDir": false,
+    "dev.containers.mountWaylandSocket": false,
+    "remote.containers.mountWslgRuntimeDir": false,
+    "remote.containers.mountWaylandSocket": false
 }

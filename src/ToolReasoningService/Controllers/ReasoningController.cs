@@ -1,13 +1,9 @@
-#pragma warning disable SKEXP0110
-
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Agents.AI;
-using Microsoft.Extensions.AI;
-using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.Agents.AzureAI;
-using Microsoft.SemanticKernel.ChatCompletion;
-using Shared.Models;
+using Microsoft.AspNetCore.Mvc;
+using SharedEntities;
 using System.Text;
+using ZavaAgentsMetadata;
+using ZavaMAFLocal;
 
 namespace ToolReasoningService.Controllers;
 
@@ -16,56 +12,63 @@ namespace ToolReasoningService.Controllers;
 public class ReasoningController : ControllerBase
 {
     private readonly ILogger<ReasoningController> _logger;
-    private readonly AzureAIAgent _skAgent;
     private readonly AIAgent _agentFxAgent;
-    private readonly IChatClient _chatClient;
 
     public ReasoningController(
         ILogger<ReasoningController> logger,
-        AzureAIAgent skAgent,
-        AIAgent agentFxAgent,
-        IChatClient chatClient)
+        MAFLocalAgentProvider localAgentProvider)
     {
         _logger = logger;
-        _skAgent = skAgent;
-        _agentFxAgent = agentFxAgent;
-        _chatClient = chatClient;
+        _agentFxAgent = localAgentProvider.GetAgentByName(AgentMetadata.GetLocalAgentName(AgentType.ToolReasoningAgent));
     }
 
     [HttpPost("generate/llm")]
     public async Task<ActionResult<string>> GenerateReasoningLlmAsync([FromBody] ReasoningRequest request, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("[LLM] Generating reasoning for prompt");
+        _logger.LogInformation($"{AgentMetadata.LogPrefixes.Llm} Generating reasoning for prompt");
 
+        // LLM endpoint uses MAF under the hood since we removed SK
         return await GenerateReasoningAsync(
             request,
-            async (prompt, token) => await InvokeLlmAsync(prompt, token),
-            "[LLM]",
+            async (prompt, token) => await InvokeAgentFrameworkAsync(prompt, token),
+            AgentMetadata.LogPrefixes.Llm,
             cancellationToken);
     }
 
-    [HttpPost("generate/sk")]
-    public async Task<ActionResult<string>> GenerateReasoningSkAsync([FromBody] ReasoningRequest request, CancellationToken cancellationToken)
+    [HttpPost("generate/maf_local")]  // Using constant AgentMetadata.FrameworkIdentifiers.MafLocal
+    public async Task<ActionResult<string>> GenerateReasoningMAFLocalAsync([FromBody] ReasoningRequest request, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("[SK] Generating reasoning for prompt");
-
-        return await GenerateReasoningAsync(
-            request,
-            async (prompt, token) => await InvokeSemanticKernelAsync(prompt, token),
-            "[SK]",
-            cancellationToken);
-    }
-
-    [HttpPost("generate/agentfx")]
-    public async Task<ActionResult<string>> GenerateReasoningAgentFxAsync([FromBody] ReasoningRequest request, CancellationToken cancellationToken)
-    {
-        _logger.LogInformation("[AgentFx] Generating reasoning for prompt");
+        _logger.LogInformation($"{AgentMetadata.LogPrefixes.MafLocal} Generating reasoning for prompt");
 
         return await GenerateReasoningAsync(
             request,
             async (prompt, token) => await InvokeAgentFrameworkAsync(prompt, token),
-            "[AgentFx]",
+            AgentMetadata.LogPrefixes.MafLocal,
             cancellationToken);
+    }
+
+    [HttpPost("generate/maf_foundry")]  // Using constant AgentMetadata.FrameworkIdentifiers.MafFoundry
+    public async Task<ActionResult<string>> GenerateReasoningMAFFoundryAsync([FromBody] ReasoningRequest request, CancellationToken cancellationToken)
+    {
+        _logger.LogInformation($"{AgentMetadata.LogPrefixes.MafFoundry} Generating reasoning for prompt");
+
+        return await GenerateReasoningAsync(
+            request,
+            async (prompt, token) => await InvokeAgentFrameworkAsync(prompt, token),
+            AgentMetadata.LogPrefixes.MafFoundry,
+            cancellationToken);
+    }
+
+    [HttpPost("generate/directcall")]
+    public ActionResult<string> GenerateReasoningDirectCallAsync([FromBody] ReasoningRequest request)
+    {
+        _logger.LogInformation("[DirectCall] Generating reasoning for prompt");
+
+        // add a sleep of 1 seconds to emulate the analysis time
+        Thread.Sleep(1000);
+
+        // DirectCall mode bypasses AI orchestration and returns fallback response immediately
+        return Ok(GenerateFallbackReasoning(request));
     }
 
     private async Task<ActionResult<string>> GenerateReasoningAsync(
@@ -94,24 +97,6 @@ public class ReasoningController : ControllerBase
         }
 
         return Ok(GenerateFallbackReasoning(request));
-    }
-
-    private async Task<string> InvokeLlmAsync(string prompt, CancellationToken cancellationToken)
-    {
-        var response = await _chatClient.GetResponseAsync(prompt, cancellationToken: cancellationToken);
-        return response.Text ?? string.Empty;
-    }
-
-    private async Task<string> InvokeSemanticKernelAsync(string prompt, CancellationToken cancellationToken)
-    {
-        var sb = new StringBuilder();
-        AzureAIAgentThread agentThread = new(_skAgent.Client);
-        await foreach (ChatMessageContent response in _skAgent.InvokeAsync(prompt, agentThread).WithCancellation(cancellationToken))
-        {
-            sb.Append(response.Content);
-        }
-
-        return sb.ToString();
     }
 
     private async Task<string> InvokeAgentFrameworkAsync(string prompt, CancellationToken cancellationToken)

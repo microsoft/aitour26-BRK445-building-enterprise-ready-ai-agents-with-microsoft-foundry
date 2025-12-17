@@ -6,7 +6,7 @@ public class SearchResponse
 {
     public SearchResponse()
     {
-        Products = new List<DataEntities.Product>();
+        Products = new List<SharedEntities.Product>();
         Response = string.Empty;
     }
 
@@ -14,7 +14,7 @@ public class SearchResponse
     public string? Response { get; set; }
 
     [JsonPropertyName("products")]
-    public List<DataEntities.Product>? Products { get; set; }
+    public List<SharedEntities.Product>? Products { get; set; }
 
 }
 

@@ -15,34 +15,41 @@
     <nav class="flex-column">
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill" aria-hidden="true"></span> Home
+                <span class="bi bi-house-door-fill" aria-hidden="true"></span>Home
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="products">
-                <span class="bi bi-list-nested" aria-hidden="true"></span> Products
+                <span class="bi bi-list-nested" aria-hidden="true"></span>Products
             </NavLink>
         </div>
 
         <!-- Smart Search Option -->
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="search">
-                <span class="bi bi-list-nested" aria-hidden="true"></span> Search
+                <span class="bi bi-search" aria-hidden="true"></span>Search
             </NavLink>
         </div>
 
         <!-- Cart Option -->
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="cart">
-                <span class="bi bi-cart" aria-hidden="true"></span> Cart
+                <span class="bi bi-cart" aria-hidden="true"></span>Cart
             </NavLink>
         </div>
 
         <!-- Settings Option -->
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="settings">
-                <span class="bi bi-gear" aria-hidden="true"></span> Settings
+                <span class="bi bi-gear" aria-hidden="true"></span>Settings
+            </NavLink>
+        </div>
+
+        <!-- Database Viewer Option -->
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="data">
+                <span class="bi bi-database" aria-hidden="true"></span>Database
             </NavLink>
         </div>
 
@@ -54,20 +61,43 @@
         
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="scenario1-single-agent">
-                <span class="bi bi-robot" aria-hidden="true"></span> Single Agent
+                <span class="bi bi-robot" aria-hidden="true"></span>Single Agent
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="scenario2-multi-agent">
-                <span class="bi bi-people" aria-hidden="true"></span> Multi-Agent
+                <span class="bi bi-people" aria-hidden="true"></span>Multi-Agent
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="agent-tester">
-                <span class="bi bi-gear" aria-hidden="true"></span> Agent Tester
+                <span class="bi bi-gear" aria-hidden="true"></span>Agent Tester
             </NavLink>
+        </div>
+
+        <hr class="nav-divider" />
+        <div class="nav-item px-3">
+            <span class="text-muted small">DevUI Tools</span>
+        </div>
+        
+        <div class="nav-item px-3">
+            <a class="nav-link" href="devui" target="_blank" rel="noopener noreferrer">
+                <span class="bi bi-code-slash" aria-hidden="true"></span>Store DevUI
+            </a>
+        </div>
+        
+        <div class="nav-item px-3">
+            <a class="nav-link" href="/api/devui/singleagent" target="_blank" rel="noopener noreferrer">
+                <span class="bi bi-code-slash" aria-hidden="true"></span>Single Agent DevUI
+            </a>
+        </div>
+        
+        <div class="nav-item px-3">
+            <a class="nav-link" href="/api/devui/multiagent" target="_blank" rel="noopener noreferrer">
+                <span class="bi bi-code-slash" aria-hidden="true"></span>Multi-Agent DevUI
+            </a>
         </div>
     </nav>
 </div>

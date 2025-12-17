@@ -1,72 +1,43 @@
-#pragma warning disable SKEXP0110
 using Microsoft.Agents.AI;
-using Microsoft.Extensions.AI;
-using Microsoft.SemanticKernel.Agents.AzureAI;
-using Microsoft.SemanticKernel.ChatCompletion;
-using ZavaAIFoundrySKAgentsProvider;
-using ZavaAgentFxAgentsProvider;
-using ZavaSemanticKernelProvider;
+using ZavaAgentsMetadata;
+using ZavaMAFFoundry;
+using DataServiceClient;
+using ZavaMAFLocal;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
-// Add services to the container.
+// Add services to the container
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddSingleton(sp =>
-{
-    var config = sp.GetService<IConfiguration>();
-    var aiFoundryConnection = config.GetConnectionString("aifoundry");
-    var chatDeploymentName = config["AI_ChatDeploymentName"] ?? "gpt-5-mini";
-    return new SemanticKernelProvider(aiFoundryConnection, chatDeploymentName);
-});
+// Add DataServiceClient for accessing DataService endpoints
+builder.Services.AddDataServiceClient("https+http://dataservice");
 
-builder.Services.AddSingleton<IChatClient>(sp =>
-{
-    var skProvider = sp.GetService<SemanticKernelProvider>();
-    var kernel = skProvider.GetKernel();
-    return kernel.GetRequiredService<IChatCompletionService>().AsChatClient();
-});
+// Register MAF Foundry agents (Microsoft Foundry)
+builder.AddMAFFoundryAgents();
 
-builder.Services.AddSingleton(sp =>
-{
-    var config = sp.GetService<IConfiguration>();
-    var aiFoundryProjectConnection = config.GetConnectionString("aifoundryproject");
-    var agentId = config.GetConnectionString("locationserviceagentid");
-    return new AIFoundryAgentProvider(aiFoundryProjectConnection, agentId);
-});
+var microsoftFoundryCnnString = builder.Configuration.GetConnectionString("microsoftfoundrycnnstring");
+var chatDeploymentName = builder.Configuration["AI_ChatDeploymentName"] ?? "gpt-5-mini";
 
-builder.Services.AddSingleton(sp =>
-{
-    var config = sp.GetService<IConfiguration>();
-    var aiFoundryProjectConnection = config.GetConnectionString("aifoundryproject");
-    return new AgentFxAgentProvider(aiFoundryProjectConnection);
-});
+builder.AddAzureOpenAIClient(connectionName: "microsoftfoundrycnnstring",
+    configureSettings: settings =>
+    {
+        if (string.IsNullOrEmpty(settings.Key))
+        {
+            settings.Credential = new Azure.Identity.DefaultAzureCredential();
+        }
+    }).AddChatClient(chatDeploymentName);
 
-builder.Services.AddSingleton<AzureAIAgent>(sp =>
-{
-    var config = sp.GetService<IConfiguration>();
-    var agentId = config.GetConnectionString("locationserviceagentid");
-    var aiFoundryAgentProvider = sp.GetService<AIFoundryAgentProvider>();
-    return aiFoundryAgentProvider.CreateAzureAIAgent(agentId);
-});
-
-builder.Services.AddSingleton<AIAgent>(sp =>
-{
-    var config = sp.GetService<IConfiguration>();
-    var agentId = config.GetConnectionString("locationserviceagentid");
-    var agentFxProvider = sp.GetService<AgentFxAgentProvider>();
-    return agentFxProvider.GetAIAgent(agentId);
-});
+// Register MAF Local agents (locally created with IChatClient)
+builder.AddMAFLocalAgents();
 
 var app = builder.Build();
 
 app.MapDefaultEndpoints();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

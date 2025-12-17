@@ -1,114 +1,157 @@
-#pragma warning disable SKEXP0110
-
-using Microsoft.Agents.AI;
-using Microsoft.SemanticKernel.Agents.AzureAI;
+using Microsoft.Agents.AI.DevUI;
 using MultiAgentDemo.Services;
-using ZavaAgentFxAgentsProvider;
-using ZavaAIFoundrySKAgentsProvider;
-using ZavaSemanticKernelProvider;
-
-// KernelAzureOpenAIConfigurator moved to its own file under Services to avoid mixing
-// type declarations with top-level statements in Program.cs.
+using ZavaMAFLocal;
+using ZavaMAFFoundry;
+using DataServiceClient;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
-// Add services to the container.
+// Add services to the container
 builder.Services.AddControllers();
-
-// Add Swagger for API documentation
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Register both agent providers - they will be available for their respective controllers
-var openAiConnection = builder.Configuration.GetValue<string>("ConnectionStrings:aifoundry");
+// Add DataServiceClient for accessing DataService endpoints
+builder.Services.AddDataServiceClient("https+http://dataservice", builder.Environment.IsDevelopment());
+
+// Register MAF Foundry agents (Microsoft Foundry)
+builder.AddMAFFoundryAgents();
+
+// Register MAF agent providers using new extension methods
+var microsoftFoundryCnnString = builder.Configuration.GetConnectionString("microsoftfoundrycnnstring");
 var chatDeploymentName = builder.Configuration["AI_ChatDeploymentName"] ?? "gpt-5-mini";
-builder.Services.AddSingleton(sp =>
-    new SemanticKernelProvider(openAiConnection, chatDeploymentName));
 
-builder.Services.AddSingleton(sp =>
-{
-    var config = sp.GetService<IConfiguration>();
-    var aiFoundryProjectConnection = config.GetConnectionString("aifoundryproject");
-    return new AIFoundryAgentProvider(aiFoundryProjectConnection, "");
-});
+// Register MAF Local agents (locally created with IChatClient)
+// Register IChatClient for MAF Local agents
+builder.AddAzureOpenAIClient(connectionName: "microsoftfoundrycnnstring",
+    configureSettings: settings =>
+    {
+        if (string.IsNullOrEmpty(settings.Key))
+        {
+            settings.Credential = new Azure.Identity.DefaultAzureCredential();
+        }
+    }).AddChatClient(chatDeploymentName);
 
-builder.Services.AddSingleton(sp =>
-{
-    var config = sp.GetService<IConfiguration>();
-    var aiFoundryProjectConnection = config.GetConnectionString("aifoundryproject");
-    return new AgentFxAgentProvider(aiFoundryProjectConnection!);
-});
+builder.AddMAFLocalAgents();
 
-builder.Services.AddSingleton(sp => builder.Configuration);
+// add workflows
+builder.AddMAFLocalWorkflows();
 
-// Register service layer implementations for multi-agent external services
-builder.Services.AddHttpClient<InventoryAgentService>(
-    client => client.BaseAddress = new("https+http://inventoryservice"));
+// Register HTTP clients for external services (used by LLM direct call and DirectCall modes)
+RegisterHttpClients(builder);
 
-builder.Services.AddHttpClient<MatchmakingAgentService>(
-    client => client.BaseAddress = new Uri("https+http://matchmakingservice"));
+// Register orchestration services for LLM mode
+RegisterOrchestrationServices(builder);
 
-builder.Services.AddHttpClient<LocationAgentService>(
-    client => client.BaseAddress = new Uri("https+http://locationservice"));
+// Register services for OpenAI responses and conversations (required for DevUI)
+builder.Services.AddOpenAIResponses();
+builder.Services.AddOpenAIConversations();
 
-builder.Services.AddHttpClient<NavigationAgentService>(
-    client => client.BaseAddress = new Uri("https+http://navigationservice"));
-
-// Register orchestration services
-builder.Services.AddScoped<SequentialOrchestrationService>();
-builder.Services.AddScoped<ConcurrentOrchestrationService>();
-builder.Services.AddScoped<HandoffOrchestrationService>();
-builder.Services.AddScoped<GroupChatOrchestrationService>();
-builder.Services.AddScoped<MagenticOrchestrationService>();
-
-// =====================================================================
-// Register agents in the DI using Semantic Kernel and the Microsoft Agent Framework
-AddAgentInSkAndAgentFx(builder, "customerinformationagentid");
-AddAgentInSkAndAgentFx(builder, "inventoryagentid");
-AddAgentInSkAndAgentFx(builder, "locationserviceagentid");
-AddAgentInSkAndAgentFx(builder, "navigationagentid");
-AddAgentInSkAndAgentFx(builder, "photoanalyzeragentid");
-AddAgentInSkAndAgentFx(builder, "productmatchmakingagentid");
-AddAgentInSkAndAgentFx(builder, "productsearchagentid");
-AddAgentInSkAndAgentFx(builder, "toolreasoningagentid");
-// =====================================================================
+// Add DevUI for agent debugging and visualization
+builder.AddDevUI();
 
 var app = builder.Build();
 
 app.MapDefaultEndpoints();
 
-// Configure the HTTP request pipeline.
+// Health logging endpoint for troubleshooting
+app.MapGet("/health/log", (ILogger<Program> logger, IConfiguration config) =>
+{
+    logger.LogInformation("MultiAgentDemo health/log requested");
+    var appInsights = config["APPLICATIONINSIGHTS_CONNECTION_STRING"] ?? config["appinsights"] ?? "<not-set>";
+    var foundryCnn = config.GetConnectionString("microsoftfoundrycnnstring") ?? "<not-set>";
+    var foundryProject = config.GetConnectionString("microsoftfoundryproject") ?? "<not-set>";
+    var env = config["ASPNETCORE_ENVIRONMENT"] ?? "<unknown>";
+
+    logger.LogInformation("MultiAgentDemo Config - Env: {Env}, AppInsights: {AppInsights}, FoundryCnn: {FoundryCnn}, FoundryProject: {FoundryProject}", env, appInsights, foundryCnn, foundryProject);
+
+    return Results.Ok(new {
+        service = "multiagentdemo",
+        env,
+        appInsights = string.IsNullOrEmpty(appInsights) ? "<not-set>" : "set",
+        microsoftFoundryConnection = string.IsNullOrEmpty(foundryCnn) ? "<not-set>" : "set",
+        microsoftFoundryProject = string.IsNullOrEmpty(foundryProject) ? "<not-set>" : "set"
+    });
+});
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+
+    // Map DevUI endpoints for agent debugging (development only)
+    app.MapOpenAIResponses();
+    app.MapOpenAIConversations();
+    app.MapDevUI();
 }
 
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();
 
-// Local function to register agents using the SemanticKernel
-static void AddAgentInSkAndAgentFx(WebApplicationBuilder builder, string key)
+/// <summary>
+/// Registers HTTP clients for external service communication (LLM direct call and DirectCall modes).
+/// </summary>
+static void RegisterHttpClients(WebApplicationBuilder builder)
 {
-    builder.Services.AddKeyedSingleton<AzureAIAgent>(key, (sp, key) =>
+    if (builder.Environment.IsDevelopment())
     {
-        var config = sp.GetRequiredService<IConfiguration>();
-        var agentId = config.GetConnectionString(key.ToString());
-        var agentSKProvider = sp.GetRequiredService<AIFoundryAgentProvider>();
-        return agentSKProvider.CreateAzureAIAgent(agentId);
-    });
-    builder.Services.AddKeyedSingleton<AIAgent>(key, (sp, key) =>
+        builder.Services.AddHttpClient<InventoryAgentService>(
+            client => client.BaseAddress = new Uri("https+http://inventoryservice"))
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+            {
+                ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+            });
+
+        builder.Services.AddHttpClient<MatchmakingAgentService>(
+            client => client.BaseAddress = new Uri("https+http://matchmakingservice"))
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+            {
+                ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+            });
+
+        builder.Services.AddHttpClient<LocationAgentService>(
+            client => client.BaseAddress = new Uri("https+http://locationservice"))
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+            {
+                ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+            });
+
+        builder.Services.AddHttpClient<NavigationAgentService>(
+            client => client.BaseAddress = new Uri("https+http://navigationservice"))
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+            {
+                ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+            });
+    }
+    else
     {
-        var config = sp.GetRequiredService<IConfiguration>();
-        var agentId = config.GetConnectionString(key.ToString());
-        var agentFxProvider = sp.GetRequiredService<AgentFxAgentProvider>();
-        return agentFxProvider.GetAIAgent(agentId);
-    });
+        builder.Services.AddHttpClient<InventoryAgentService>(
+            client => client.BaseAddress = new Uri("https+http://inventoryservice"));
+
+        builder.Services.AddHttpClient<MatchmakingAgentService>(
+            client => client.BaseAddress = new Uri("https+http://matchmakingservice"));
+
+        builder.Services.AddHttpClient<LocationAgentService>(
+            client => client.BaseAddress = new Uri("https+http://locationservice"));
+
+        builder.Services.AddHttpClient<NavigationAgentService>(
+            client => client.BaseAddress = new Uri("https+http://navigationservice"));
+    }
+}
+
+/// <summary>
+/// Registers orchestration services for different multi-agent patterns (LLM mode).
+/// </summary>
+static void RegisterOrchestrationServices(WebApplicationBuilder builder)
+{
+    builder.Services.AddScoped<SequentialOrchestrationService>();
+    builder.Services.AddScoped<ConcurrentOrchestrationService>();
+    builder.Services.AddScoped<HandoffOrchestrationService>();
+    builder.Services.AddScoped<GroupChatOrchestrationService>();
+    builder.Services.AddScoped<MagenticOrchestrationService>();
 }

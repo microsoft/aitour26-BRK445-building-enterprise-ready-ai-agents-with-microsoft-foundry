@@ -1,4 +1,5 @@
-using SingleAgentDemo.Models;
+using SharedEntities;
+using ZavaAgentsMetadata;
 
 namespace SingleAgentDemo.Services;
 
@@ -6,7 +7,7 @@ public class ToolReasoningService
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<ToolReasoningService> _logger;
-    private string _framework = "sk"; // Default to Semantic Kernel
+    private string _framework = AgentMetadata.FrameworkIdentifiers.MafLocal; // Default to MAF Local
 
     public ToolReasoningService(HttpClient httpClient, ILogger<ToolReasoningService> logger)
     {
@@ -17,10 +18,10 @@ public class ToolReasoningService
     /// <summary>
     /// Sets the agent framework to use for service calls
     /// </summary>
-    /// <param name="framework">"sk" for Semantic Kernel or "agentfx" for Microsoft Agent Framework</param>
+    /// <param name="framework">"llm" for LLM Direct Call, or "maf" for Microsoft Agent Framework</param>
     public void SetFramework(string framework)
     {
-        _framework = framework?.ToLowerInvariant() ?? "sk";
+        _framework = framework?.ToLowerInvariant() ?? AgentMetadata.FrameworkIdentifiers.MafLocal;
         _logger.LogInformation($"[ToolReasoningService] Framework set to: {_framework}");
     }
 
@@ -52,6 +53,12 @@ public class ToolReasoningService
 
     private string GenerateFallbackReasoning(ReasoningRequest request)
     {
-        return $"Based on the task '{request.Prompt}' and the detected materials ({string.Join(", ", request.PhotoAnalysis.DetectedMaterials)}), specific tools will be recommended to complement your existing tools: {string.Join(", ", request.Customer.OwnedTools)}.";
+        var customerExistingTools = "None";
+        if (request.Customer != null && request.Customer.OwnedTools.Any())
+        {
+            customerExistingTools = string.Join(", ", request.Customer.OwnedTools);
+        }
+
+        return $"Based on the task '{request.Prompt}' and the detected materials ({string.Join(", ", request.PhotoAnalysis.DetectedMaterials)}), specific tools will be recommended to complement your existing tools: {customerExistingTools}.";
     }
 }

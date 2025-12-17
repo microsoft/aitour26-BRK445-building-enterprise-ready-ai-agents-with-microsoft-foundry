@@ -23,10 +23,10 @@ properties:
     secrets:
       - name: applicationinsights-connection-string
         value: '{{ .Env.APPINSIGHTS_APPINSIGHTSCONNECTIONSTRING }}'
-      - name: connectionstrings--aifoundry
-        value: '{{ .Env.AIFOUNDRY_CONNECTIONSTRING }}'
-      - name: connectionstrings--aifoundryproject
-        value: '{{ securedParameter "aifoundryproject" }}'
+      - name: connectionstrings--microsoftfoundrycnnstring
+        value: '{{ securedParameter "microsoftfoundrycnnstring" }}'
+      - name: connectionstrings--microsoftfoundryproject
+        value: '{{ securedParameter "microsoftfoundryproject" }}'
   template:
     containers:
       - image: {{ .Image }}
@@ -36,16 +36,40 @@ properties:
             value: {{ .Env.MANAGED_IDENTITY_CLIENT_ID }}
           - name: AI_ChatDeploymentName
             value: gpt-5-mini
+          - name: ANALYZEPHOTOSERVICE_HTTP
+            value: http://analyzephotoservice.{{ .Env.AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN }}
+          - name: ANALYZEPHOTOSERVICE_HTTPS
+            value: https://analyzephotoservice.{{ .Env.AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN }}
           - name: ASPNETCORE_FORWARDEDHEADERS_ENABLED
             value: "true"
+          - name: CUSTOMERINFORMATIONSERVICE_HTTP
+            value: http://customerinformationservice.{{ .Env.AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN }}
+          - name: CUSTOMERINFORMATIONSERVICE_HTTPS
+            value: https://customerinformationservice.{{ .Env.AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN }}
+          - name: DATASERVICE_HTTP
+            value: http://dataservice.{{ .Env.AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN }}
+          - name: DATASERVICE_HTTPS
+            value: https://dataservice.{{ .Env.AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN }}
           - name: HTTP_PORTS
             value: '{{ targetPortOrDefault 0 }}'
+          - name: INVENTORYSERVICE_HTTP
+            value: http://inventoryservice.{{ .Env.AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN }}
+          - name: INVENTORYSERVICE_HTTPS
+            value: https://inventoryservice.{{ .Env.AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN }}
           - name: OTEL_DOTNET_EXPERIMENTAL_OTLP_EMIT_EVENT_LOG_ATTRIBUTES
             value: "true"
           - name: OTEL_DOTNET_EXPERIMENTAL_OTLP_EMIT_EXCEPTION_LOG_ATTRIBUTES
             value: "true"
           - name: OTEL_DOTNET_EXPERIMENTAL_OTLP_RETRY
             value: in_memory
+          - name: PRODUCTSEARCHSERVICE_HTTP
+            value: http://productsearchservice.{{ .Env.AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN }}
+          - name: PRODUCTSEARCHSERVICE_HTTPS
+            value: https://productsearchservice.{{ .Env.AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN }}
+          - name: TOOLREASONINGSERVICE_HTTP
+            value: http://toolreasoningservice.{{ .Env.AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN }}
+          - name: TOOLREASONINGSERVICE_HTTPS
+            value: https://toolreasoningservice.{{ .Env.AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN }}
           - name: services__analyzephotoservice__http__0
             value: http://analyzephotoservice.{{ .Env.AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN }}
           - name: services__analyzephotoservice__https__0
@@ -54,20 +78,28 @@ properties:
             value: http://customerinformationservice.{{ .Env.AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN }}
           - name: services__customerinformationservice__https__0
             value: https://customerinformationservice.{{ .Env.AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN }}
+          - name: services__dataservice__http__0
+            value: http://dataservice.{{ .Env.AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN }}
+          - name: services__dataservice__https__0
+            value: https://dataservice.{{ .Env.AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN }}
           - name: services__inventoryservice__http__0
             value: http://inventoryservice.{{ .Env.AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN }}
           - name: services__inventoryservice__https__0
             value: https://inventoryservice.{{ .Env.AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN }}
+          - name: services__productsearchservice__http__0
+            value: http://productsearchservice.{{ .Env.AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN }}
+          - name: services__productsearchservice__https__0
+            value: https://productsearchservice.{{ .Env.AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN }}
           - name: services__toolreasoningservice__http__0
             value: http://toolreasoningservice.{{ .Env.AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN }}
           - name: services__toolreasoningservice__https__0
             value: https://toolreasoningservice.{{ .Env.AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN }}
           - name: APPLICATIONINSIGHTS_CONNECTION_STRING
             secretRef: applicationinsights-connection-string
-          - name: ConnectionStrings__aifoundry
-            secretRef: connectionstrings--aifoundry
-          - name: ConnectionStrings__aifoundryproject
-            secretRef: connectionstrings--aifoundryproject
+          - name: ConnectionStrings__microsoftfoundrycnnstring
+            secretRef: connectionstrings--microsoftfoundrycnnstring
+          - name: ConnectionStrings__microsoftfoundryproject
+            secretRef: connectionstrings--microsoftfoundryproject
     scale:
       minReplicas: 1
 tags:

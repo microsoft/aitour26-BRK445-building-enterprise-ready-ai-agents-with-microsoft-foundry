@@ -1,84 +1,70 @@
-#pragma warning disable SKEXP0110
-
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Agents.AI;
-using Microsoft.Extensions.AI;
-using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.Agents.AzureAI;
-using Microsoft.SemanticKernel.ChatCompletion;
-using Shared.Models;
 using SharedEntities;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using ZavaAgentsMetadata;
 
 namespace InventoryService.Controllers;
 
 [ApiController]
-[Route("api")]
+[Route("api/[controller]")]
 public class InventoryController : ControllerBase
 {
     private readonly ILogger<InventoryController> _logger;
-    private readonly AzureAIAgent _skAgent;
-    private readonly AIAgent _agentFxAgent;
-    private readonly IChatClient _chatClient;
+    private readonly DataServiceClient.DataServiceClient _dataServiceClient;
 
     public InventoryController(
         ILogger<InventoryController> logger,
-        AzureAIAgent skAgent,
-        AIAgent agentFxAgent,
-        IChatClient chatClient)
+        DataServiceClient.DataServiceClient dataServiceClient)
     {
         _logger = logger;
-        _skAgent = skAgent;
-        _agentFxAgent = agentFxAgent;
-        _chatClient = chatClient;
+        _dataServiceClient = dataServiceClient;
     }
 
-    [HttpPost("search/llm")]
+    [HttpPost("searchllm")]
     public async Task<ActionResult<ToolRecommendation[]>> SearchInventoryLlmAsync([FromBody] InventorySearchRequest request, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("[LLM] Searching inventory for query: {SearchQuery}", request.SearchQuery);
+        _logger.LogInformation($"{AgentMetadata.LogPrefixes.Llm} Searching inventory for query: {{SearchQuery}}", request.SearchQuery);
 
-        return await SearchInventoryAsync(
-            request,
-            InvokeLlmAsync,
-            "[LLM]",
-            cancellationToken);
+        // Use DataServiceClient directly instead of LLM/Agent
+        return await SearchInventoryFromDataServiceAsync(request, AgentMetadata.LogPrefixes.Llm, cancellationToken);
+    }
+           
+    [HttpPost("searchmaf_local")]  // Using constant AgentMetadata.FrameworkIdentifiers.MafLocal
+    public async Task<ActionResult<ToolRecommendation[]>> SearchInventoryMAFLocalAsync([FromBody] InventorySearchRequest request, CancellationToken cancellationToken)
+    {
+        _logger.LogInformation($"{AgentMetadata.LogPrefixes.MafLocal} Searching inventory for query: {{SearchQuery}}", request.SearchQuery);
+
+        // Use DataServiceClient directly instead of Agent
+        return await SearchInventoryFromDataServiceAsync(request, AgentMetadata.LogPrefixes.MafLocal, cancellationToken);
     }
 
-    [HttpPost("search/sk")]
-    public async Task<ActionResult<ToolRecommendation[]>> SearchInventorySkAsync([FromBody] InventorySearchRequest request, CancellationToken cancellationToken)
+    [HttpPost("searchmaf_foundry")]  // Using constant AgentMetadata.FrameworkIdentifiers.MafFoundry
+    public async Task<ActionResult<ToolRecommendation[]>> SearchInventoryMAFFoundryAsync([FromBody] InventorySearchRequest request, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("[SK] Searching inventory for query: {SearchQuery}", request.SearchQuery);
+        _logger.LogInformation($"{AgentMetadata.LogPrefixes.MafFoundry} Searching inventory for query: {{SearchQuery}}", request.SearchQuery);
 
-        return await SearchInventoryAsync(
-            request,
-            InvokeSemanticKernelAsync,
-            "[SK]",
-            cancellationToken);
+        // Use DataServiceClient directly instead of Agent
+        return await SearchInventoryFromDataServiceAsync(request, AgentMetadata.LogPrefixes.MafFoundry, cancellationToken);
     }
 
-    [HttpPost("search/agentfx")]
-    public async Task<ActionResult<ToolRecommendation[]>> SearchInventoryAgentFxAsync([FromBody] InventorySearchRequest request, CancellationToken cancellationToken)
+    [HttpPost("searchdirectcall")]
+    public async Task<ActionResult<ToolRecommendation[]>> SearchInventoryDirectCallAsync([FromBody] InventorySearchRequest request, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("[AgentFx] Searching inventory for query: {SearchQuery}", request.SearchQuery);
+        _logger.LogInformation($"{AgentMetadata.LogPrefixes.DirectCall} Searching inventory for query: {{SearchQuery}}", request.SearchQuery);
 
-        return await SearchInventoryAsync(
-            request,
-            InvokeAgentFrameworkAsync,
-            "[AgentFx]",
-            cancellationToken);
+        // Use DataServiceClient to search inventory
+        return await SearchInventoryFromDataServiceAsync(request, AgentMetadata.LogPrefixes.DirectCall, cancellationToken);
     }
 
     [HttpGet("search/{sku}")]
-    public ActionResult<ToolRecommendation> GetItem(string sku)
+    public async Task<ActionResult<ToolRecommendation>> GetItem(string sku, CancellationToken cancellationToken = default)
     {
         try
         {
             _logger.LogInformation("Getting inventory item for SKU: {Sku}", sku);
 
-            if (_inventory.TryGetValue(sku, out var item))
+            // Try to get from DataService first
+            var item = await _dataServiceClient.GetToolBySkuAsync(sku, cancellationToken);
+            if (item != null)
             {
                 return Ok(item);
             }
@@ -93,14 +79,15 @@ public class InventoryController : ControllerBase
     }
 
     [HttpGet("available")]
-    public ActionResult<ToolRecommendation[]> GetAvailableItems()
+    public async Task<ActionResult<ToolRecommendation[]>> GetAvailableItems(CancellationToken cancellationToken = default)
     {
         try
         {
             _logger.LogInformation("Getting all available inventory items");
 
-            var availableItems = _inventory.Values.Where(item => item.IsAvailable).ToArray();
-            return Ok(availableItems);
+            // Get from DataService
+            var availableItems = await _dataServiceClient.GetAvailableToolsAsync(cancellationToken);
+            return Ok(availableItems.ToArray());
         }
         catch (Exception ex)
         {
@@ -110,17 +97,17 @@ public class InventoryController : ControllerBase
     }
 
     [HttpPost("check-availability")]
-    public async Task<ActionResult<Dictionary<string, bool>>> CheckAvailabilityAsync([FromBody] string[] skus)
+    public async Task<ActionResult<Dictionary<string, bool>>> CheckAvailabilityAsync([FromBody] string[] skus, CancellationToken cancellationToken = default)
     {
         try
         {
             _logger.LogInformation("Checking availability for {Count} SKUs", skus.Length);
-            await Task.Delay(300);
 
             var availability = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
             foreach (var sku in skus)
             {
-                availability[sku] = _inventory.TryGetValue(sku, out var item) && item.IsAvailable;
+                var tool = await _dataServiceClient.GetToolBySkuAsync(sku, cancellationToken);
+                availability[sku] = tool != null && tool.IsAvailable;
             }
 
             return Ok(availability);
@@ -132,63 +119,67 @@ public class InventoryController : ControllerBase
         }
     }
 
-    private async Task<ActionResult<ToolRecommendation[]>> SearchInventoryAsync(
+    private async Task<ActionResult<ToolRecommendation[]>> SearchInventoryFromDataServiceAsync(
         InventorySearchRequest request,
-        Func<string, CancellationToken, Task<string>> invokeAgentAsync,
         string logPrefix,
         CancellationToken cancellationToken)
     {
-        var prompt = BuildInventorySearchPrompt(request.SearchQuery);
-
         try
         {
-            var agentResponse = await invokeAgentAsync(prompt, cancellationToken);
-            _logger.LogInformation("{Prefix} Raw agent response length: {Length}", logPrefix, agentResponse.Length);
+            _logger.LogInformation("{Prefix} Searching inventory from DataService for query: {SearchQuery}", logPrefix, request.SearchQuery);
 
-            if (TryParseSkuList(agentResponse, out var skus) && skus.Length > 0)
+            // Get all available tools from DataService
+            var allTools = await _dataServiceClient.GetAvailableToolsAsync(cancellationToken);
+            
+            if (allTools == null || allTools.Count == 0)
             {
-                return Ok(BuildRecommendationsFromSkus(skus, request.SearchQuery));
+                _logger.LogWarning("{Prefix} No tools available from DataService, using fallback", logPrefix);
+                return Ok(await BuildFallbackRecommendations(request.SearchQuery));
             }
 
-            _logger.LogWarning("{Prefix} Unable to parse SKU list. Falling back to heuristic recommendations. Raw: {Raw}", logPrefix, TrimForLog(agentResponse));
+            // Filter tools based on search query
+            var queryLower = request.SearchQuery.ToLowerInvariant();
+            var matchedTools = allTools
+                .Where(tool => 
+                    tool.Name.Contains(queryLower, StringComparison.OrdinalIgnoreCase) ||
+                    tool.Description.Contains(queryLower, StringComparison.OrdinalIgnoreCase) ||
+                    tool.Sku.Contains(queryLower, StringComparison.OrdinalIgnoreCase))
+                .Select(tool => new ToolRecommendation
+                {
+                    Name = tool.Name,
+                    Sku = tool.Sku,
+                    IsAvailable = tool.IsAvailable,
+                    Price = tool.Price,
+                    Description = tool.Description
+                })
+                .ToArray();
+
+            if (matchedTools.Length > 0)
+            {
+                _logger.LogInformation("{Prefix} Found {Count} matching tools from DataService", logPrefix, matchedTools.Length);
+                return Ok(matchedTools);
+            }
+
+            // If no direct matches, use fallback heuristics
+            _logger.LogInformation("{Prefix} No direct matches found, using heuristic fallback", logPrefix);
+            var fallbackSkus = GetFallbackInventorySkus(request.SearchQuery);
+            
+            if (fallbackSkus.Length > 0)
+            {
+                return Ok(await BuildRecommendationsFromSkus(fallbackSkus, request.SearchQuery));
+            }
+
+            // Return empty result if no matches found
+            return Ok(Array.Empty<ToolRecommendation>());
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "{Prefix} Agent invocation failed. Using fallback recommendations.", logPrefix);
+            _logger.LogError(ex, "{Prefix} Error searching inventory from DataService", logPrefix);
+            return Ok(await BuildFallbackRecommendations(request.SearchQuery));
         }
-
-        return Ok(BuildFallbackRecommendations(request.SearchQuery));
     }
 
-    private async Task<string> InvokeLlmAsync(string prompt, CancellationToken cancellationToken)
-    {
-        var response = await _chatClient.GetResponseAsync(prompt, cancellationToken: cancellationToken);
-        return response.Text ?? string.Empty;
-    }
-
-    private async Task<string> InvokeSemanticKernelAsync(string prompt, CancellationToken cancellationToken)
-    {
-        var sb = new StringBuilder();
-        AzureAIAgentThread agentThread = new(_skAgent.Client);
-
-        await foreach (ChatMessageContent response in _skAgent.InvokeAsync(prompt, agentThread).WithCancellation(cancellationToken))
-        {
-            sb.Append(response.Content);
-        }
-
-        return sb.ToString();
-    }
-
-    private async Task<string> InvokeAgentFrameworkAsync(string prompt, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var thread = _agentFxAgent.GetNewThread();
-        var response = await _agentFxAgent.RunAsync(prompt, thread);
-        return response?.Text ?? string.Empty;
-    }
-
-    private ToolRecommendation[] BuildRecommendationsFromSkus(string[] skus, string searchQuery)
+    private async Task<ToolRecommendation[]> BuildRecommendationsFromSkus(string[] skus, string searchQuery)
     {
         var recommendations = new List<ToolRecommendation>();
 
@@ -199,7 +190,7 @@ public class InventoryController : ControllerBase
                 continue;
             }
 
-            recommendations.Add(GetToolRecommendation(sku));
+            recommendations.Add(await GetToolRecommendation(sku));
         }
 
         if (recommendations.Count == 0)
@@ -217,44 +208,10 @@ public class InventoryController : ControllerBase
         return recommendations.ToArray();
     }
 
-    private ToolRecommendation[] BuildFallbackRecommendations(string searchQuery)
-        => BuildRecommendationsFromSkus(GetFallbackInventorySkus(searchQuery), searchQuery);
+    private async Task<ToolRecommendation[]> BuildFallbackRecommendations(string searchQuery)
+        => await BuildRecommendationsFromSkus(GetFallbackInventorySkus(searchQuery), searchQuery);
 
-    #region JSON & utility helpers
-
-    private static string BuildInventorySearchPrompt(string searchQuery) => @$"
-# Context
-User Query: {searchQuery}
-
-# Tasks
-Search the inventory for products that may match the user query.
-Analyze the user query and extract the product name or SKU that the user is referring to.
-
-Return ONLY the product SKU identifiers, separated by commas, with no additional text, explanation, or formatting.
-If there are NO matching products, return a string that contains only a single comma: ','
-Example response: 'PAINT-ROLLER-9IN,BRUSH-SET-3PC,SAW-CIRCULAR-7IN'
-";
-
-    private static bool TryParseSkuList(string agentResponse, out string[] skus)
-    {
-        skus = Array.Empty<string>();
-        if (string.IsNullOrWhiteSpace(agentResponse))
-        {
-            return false;
-        }
-
-        var normalized = agentResponse.Trim();
-        if (string.Equals(normalized, ",", StringComparison.Ordinal))
-        {
-            return false;
-        }
-
-        skus = normalized
-            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .ToArray();
-
-        return skus.Length > 0;
-    }
+    #region Utility helpers
 
     private static string[] GetFallbackInventorySkus(string searchQuery)
     {
@@ -281,18 +238,26 @@ Example response: 'PAINT-ROLLER-9IN,BRUSH-SET-3PC,SAW-CIRCULAR-7IN'
         return matchedSkus.ToArray();
     }
 
-    private static ToolRecommendation GetToolRecommendation(string sku)
+    private async Task<ToolRecommendation> GetToolRecommendation(string sku)
     {
-        if (_inventory.TryGetValue(sku, out var item))
+        try
         {
-            return new ToolRecommendation
+            var item = await _dataServiceClient.GetToolBySkuAsync(sku);
+            if (item != null)
             {
-                Name = item.Name,
-                Sku = item.Sku,
-                IsAvailable = item.IsAvailable && Random.Shared.NextDouble() > 0.1,
-                Price = item.Price * (decimal)(0.9 + Random.Shared.NextDouble() * 0.2),
-                Description = item.Description
-            };
+                return new ToolRecommendation
+                {
+                    Name = item.Name,
+                    Sku = item.Sku,
+                    IsAvailable = item.IsAvailable && Random.Shared.NextDouble() > 0.1,
+                    Price = item.Price * (decimal)(0.9 + Random.Shared.NextDouble() * 0.2),
+                    Description = item.Description
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to get tool from DataService for SKU {Sku}", sku);
         }
 
         return new ToolRecommendation
@@ -304,23 +269,6 @@ Example response: 'PAINT-ROLLER-9IN,BRUSH-SET-3PC,SAW-CIRCULAR-7IN'
             Description = "Product not found in current inventory"
         };
     }
-
-    private static string TrimForLog(string value, int maxLength = 400)
-        => value.Length <= maxLength ? value : value[..maxLength] + "...";
-
-    private static readonly Dictionary<string, ToolRecommendation> _inventory = new(StringComparer.OrdinalIgnoreCase)
-    {
-        { "PAINT-ROLLER-9IN", new ToolRecommendation { Name = "Paint Roller", Sku = "PAINT-ROLLER-9IN", IsAvailable = true, Price = 12.99m, Description = "9-inch paint roller for smooth walls" } },
-        { "BRUSH-SET-3PC", new ToolRecommendation { Name = "Paint Brush Set", Sku = "BRUSH-SET-3PC", IsAvailable = true, Price = 24.99m, Description = "3-piece brush set for detail work" } },
-        { "DROP-CLOTH-9X12", new ToolRecommendation { Name = "Drop Cloth", Sku = "DROP-CLOTH-9X12", IsAvailable = true, Price = 8.99m, Description = "Plastic drop cloth protection" } },
-        { "SAW-CIRCULAR-7IN", new ToolRecommendation { Name = "Circular Saw", Sku = "SAW-CIRCULAR-7IN", IsAvailable = true, Price = 89.99m, Description = "7.25-inch circular saw for wood cutting" } },
-        { "STAIN-WOOD-QT", new ToolRecommendation { Name = "Wood Stain", Sku = "STAIN-WOOD-QT", IsAvailable = false, Price = 15.99m, Description = "1-quart wood stain in natural color" } },
-        { "SAFETY-GLASSES", new ToolRecommendation { Name = "Safety Glasses", Sku = "SAFETY-GLASSES", IsAvailable = true, Price = 5.99m, Description = "Safety glasses for eye protection" } },
-        { "GLOVES-WORK-L", new ToolRecommendation { Name = "Work Gloves", Sku = "GLOVES-WORK-L", IsAvailable = true, Price = 7.99m, Description = "Heavy-duty work gloves" } },
-        { "DRILL-CORDLESS", new ToolRecommendation { Name = "Cordless Drill", Sku = "DRILL-CORDLESS", IsAvailable = true, Price = 79.99m, Description = "18V cordless drill with battery" } },
-        { "LEVEL-2FT", new ToolRecommendation { Name = "Level", Sku = "LEVEL-2FT", IsAvailable = true, Price = 19.99m, Description = "2-foot aluminum level" } },
-        { "TILE-CUTTER", new ToolRecommendation { Name = "Tile Cutter", Sku = "TILE-CUTTER", IsAvailable = false, Price = 45.99m, Description = "Manual tile cutting tool" } }
-    };
 
     #endregion
 }

@@ -1,4 +1,4 @@
-﻿using DataEntities;
+﻿using SharedEntities;
 using Microsoft.Extensions.VectorData;
 
 namespace VectorEntities

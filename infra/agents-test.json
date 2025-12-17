@@ -2,7 +2,8 @@
   {
     "name": "InventoryAgent",
     "instructions": "You answer inventory queries and report stock levels. Provide current stock levels when SKU / Product ID is supplied. If location (store / warehouse) not specified, ask user to clarify. Highlight low stock thresholds (<= configured safety stock if provided, else <=5 units). Never guess a quantity; if data missing, ask for the inventory dataset, API response, or snapshot. Return structured summaries: SKU | OnHand | Allocated | Available | Status. If trend data is provided, indicate increase/decrease and potential replenishment need. Tone: Concise, data-driven. Safety: Do not expose internal system IDs unless explicitly provided by user.",
-    "files": []
+    "files": [],
+    "createAgent": true
   },
   {
     "name": "CustomerInformationAgent",
@@ -11,6 +12,7 @@
       "docs/customers/customer-1.md",
       "docs/customers/customer-2.md",
       "docs/customers/customer-3.md"
-    ]
+    ],
+    "createAgent": true
   }
 ]

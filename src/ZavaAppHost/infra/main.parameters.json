@@ -5,32 +5,14 @@
       "principalId": {
         "value": "${AZURE_PRINCIPAL_ID}"
       },
-      "aifoundryproject": {
-        "value": "${AZURE_AIFOUNDRYPROJECT}"
+      "microsoftfoundrycnnstring": {
+        "value": "${AZURE_MICROSOFTFOUNDRYCNNSTRING}"
       },
-      "customerinformationagentid": {
-        "value": "${AZURE_CUSTOMERINFORMATIONAGENTID}"
-      },
-      "inventoryagentid": {
-        "value": "${AZURE_INVENTORYAGENTID}"
-      },
-      "locationserviceagentid": {
-        "value": "${AZURE_LOCATIONSERVICEAGENTID}"
-      },
-      "navigationagentid": {
-        "value": "${AZURE_NAVIGATIONAGENTID}"
-      },
-      "photoanalyzeragentid": {
-        "value": "${AZURE_PHOTOANALYZERAGENTID}"
-      },
-      "productmatchmakingagentid": {
-        "value": "${AZURE_PRODUCTMATCHMAKINGAGENTID}"
+      "microsoftfoundryproject": {
+        "value": "${AZURE_MICROSOFTFOUNDRYPROJECT}"
       },
       "sql_password": {
         "value": "${AZURE_SQL_PASSWORD}"
-      },
-      "toolreasoningagentid": {
-        "value": "${AZURE_TOOLREASONINGAGENTID}"
       },
       "environmentName": {
         "value": "${AZURE_ENV_NAME}"

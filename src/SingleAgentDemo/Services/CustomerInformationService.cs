@@ -1,4 +1,5 @@
-using SingleAgentDemo.Models;
+using SharedEntities;
+using ZavaAgentsMetadata;
 
 namespace SingleAgentDemo.Services;
 
@@ -6,7 +7,7 @@ public class CustomerInformationService
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<CustomerInformationService> _logger;
-    private string _framework = "sk"; // Default to Semantic Kernel
+    private string _framework = AgentMetadata.FrameworkIdentifiers.MafLocal; // Default to MAF Local
 
     public CustomerInformationService(HttpClient httpClient, ILogger<CustomerInformationService> logger)
     {
@@ -17,10 +18,10 @@ public class CustomerInformationService
     /// <summary>
     /// Sets the agent framework to use for service calls
     /// </summary>
-    /// <param name="framework">"sk" for Semantic Kernel or "agentfx" for Microsoft Agent Framework</param>
+    /// <param name="framework">"llm" for LLM Direct Call, or "maf" for Microsoft Agent Framework</param>
     public void SetFramework(string framework)
     {
-        _framework = framework?.ToLowerInvariant() ?? "sk";
+        _framework = framework?.ToLowerInvariant() ?? AgentMetadata.FrameworkIdentifiers.MafLocal;
         _logger.LogInformation($"[CustomerInformationService] Framework set to: {_framework}");
     }
 
@@ -89,8 +90,8 @@ public class CustomerInformationService
         {
             Id = customerId,
             Name = $"Customer {customerId}",
-            OwnedTools = new[] { "hammer", "screwdriver", "measuring tape" },
-            Skills = new[] { "basic DIY", "painting" }
+            OwnedTools = ["hammer", "screwdriver", "measuring tape"],
+            Skills = ["basic DIY", "painting"]
         };
     }
 
@@ -98,13 +99,13 @@ public class CustomerInformationService
     {
         return new ToolMatchResult
         {
-            ReusableTools = new[] { "measuring tape", "screwdriver" },
-            MissingTools = new[]
-            {
-                new InternalToolRecommendation { Name = "Paint Roller", Sku = "PAINT-ROLLER-9IN", IsAvailable = true, Price = 12.99m, Description = "9-inch paint roller for smooth walls" },
-                new InternalToolRecommendation { Name = "Paint Brush Set", Sku = "BRUSH-SET-3PC", IsAvailable = true, Price = 24.99m, Description = "3-piece brush set for detail work" },
-                new InternalToolRecommendation { Name = "Drop Cloth", Sku = "DROP-CLOTH-9X12", IsAvailable = true, Price = 8.99m, Description = "Plastic drop cloth protection" }
-            }
+            ReusableTools = ["measuring tape", "screwdriver"],
+            MissingTools =
+            [
+                new ToolRecommendation { Name = "Paint Roller", Sku = "PAINT-ROLLER-9IN", IsAvailable = true, Price = 12.99m, Description = "9-inch paint roller for smooth walls" },
+                new ToolRecommendation { Name = "Paint Brush Set", Sku = "BRUSH-SET-3PC", IsAvailable = true, Price = 24.99m, Description = "3-piece brush set for detail work" },
+                new ToolRecommendation { Name = "Drop Cloth", Sku = "DROP-CLOTH-9X12", IsAvailable = true, Price = 8.99m, Description = "Plastic drop cloth protection" }
+            ]
         };
     }
 }

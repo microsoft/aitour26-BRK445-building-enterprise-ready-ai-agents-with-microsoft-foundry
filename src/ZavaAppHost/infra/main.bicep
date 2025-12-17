@@ -13,19 +13,9 @@ param location string
 param principalId string = ''
 
 @secure()
-param aifoundryproject string
+param microsoftfoundrycnnstring string
 @secure()
-param customerinformationagentid string
-@secure()
-param inventoryagentid string
-@secure()
-param locationserviceagentid string
-@secure()
-param navigationagentid string
-@secure()
-param photoanalyzeragentid string
-@secure()
-param productmatchmakingagentid string
+param microsoftfoundryproject string
 @metadata({azd: {
   type: 'generate'
   config: {length:22,minLower:1,minUpper:1,minNumeric:1}
@@ -33,8 +23,6 @@ param productmatchmakingagentid string
 })
 @secure()
 param sql_password string
-@secure()
-param toolreasoningagentid string
 
 var tags = {
   'azd-env-name': environmentName
@@ -55,23 +43,6 @@ module resources 'resources.bicep' = {
   }
 }
 
-module aifoundry 'aifoundry/aifoundry.module.bicep' = {
-  name: 'aifoundry'
-  scope: rg
-  params: {
-    location: location
-  }
-}
-module aifoundry_roles 'aifoundry-roles/aifoundry-roles.module.bicep' = {
-  name: 'aifoundry-roles'
-  scope: rg
-  params: {
-    aifoundry_outputs_name: aifoundry.outputs.name
-    location: location
-    principalId: resources.outputs.MANAGED_IDENTITY_PRINCIPAL_ID
-    principalType: 'ServicePrincipal'
-  }
-}
 module appInsights 'appInsights/appInsights.module.bicep' = {
   name: 'appInsights'
   scope: rg
@@ -91,5 +62,4 @@ output AZURE_CONTAINER_APPS_ENVIRONMENT_ID string = resources.outputs.AZURE_CONT
 output AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN string = resources.outputs.AZURE_CONTAINER_APPS_ENVIRONMENT_DEFAULT_DOMAIN
 output SERVICE_SQL_VOLUME_ZAVAAPPHOST2534AD4EB4SQLDATA_NAME string = resources.outputs.SERVICE_SQL_VOLUME_ZAVAAPPHOST2534AD4EB4SQLDATA_NAME
 output AZURE_VOLUMES_STORAGE_ACCOUNT string = resources.outputs.AZURE_VOLUMES_STORAGE_ACCOUNT
-output AIFOUNDRY_CONNECTIONSTRING string = aifoundry.outputs.connectionString
 output APPINSIGHTS_APPINSIGHTSCONNECTIONSTRING string = appInsights.outputs.appInsightsConnectionString

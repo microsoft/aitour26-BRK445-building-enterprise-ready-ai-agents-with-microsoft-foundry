@@ -1,4 +1,5 @@
-using SingleAgentDemo.Models;
+using SharedEntities;
+using ZavaAgentsMetadata;
 
 namespace SingleAgentDemo.Services;
 
@@ -6,7 +7,7 @@ public class AnalyzePhotoService
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<AnalyzePhotoService> _logger;
-    private string _framework = "sk"; // Default to Semantic Kernel
+    private string _framework = AgentMetadata.FrameworkIdentifiers.MafLocal; // Default to Microsoft Agent Framework
 
     public AnalyzePhotoService(HttpClient httpClient, ILogger<AnalyzePhotoService> logger)
     {
@@ -17,10 +18,10 @@ public class AnalyzePhotoService
     /// <summary>
     /// Sets the agent framework to use for service calls
     /// </summary>
-    /// <param name="framework">"sk" for Semantic Kernel or "agentfx" for Microsoft Agent Framework</param>
+    /// <param name="framework">"llm" for LLM Direct Call, or "maf" for Microsoft Agent Framework</param>
     public void SetFramework(string framework)
     {
-        _framework = framework?.ToLowerInvariant() ?? "sk";
+        _framework = framework?.ToLowerInvariant() ?? AgentMetadata.FrameworkIdentifiers.MafLocal;
         _logger.LogInformation($"[AnalyzePhotoService] Framework set to: {_framework}");
     }
 
@@ -36,8 +37,15 @@ public class AnalyzePhotoService
             content.Add(streamContent, "image", image.FileName);
             content.Add(new StringContent(prompt), "prompt");
 
-            var endpoint = $"/api/PhotoAnalysis/analyze/{_framework}";
-            _logger.LogInformation($"[AnalyzePhotoService] Calling endpoint: {endpoint}");
+            // Map framework to actual controller endpoints
+            var endpoint = _framework switch
+            {
+                AgentMetadata.FrameworkIdentifiers.Llm => "/api/PhotoAnalysis/analyzellm",
+                AgentMetadata.FrameworkIdentifiers.DirectCall => "/api/PhotoAnalysis/analyzedirectcall",
+                AgentMetadata.FrameworkIdentifiers.MafFoundry => $"/api/PhotoAnalysis/analyze{AgentMetadata.FrameworkIdentifiers.MafFoundry}",
+                _ => $"/api/PhotoAnalysis/analyze{AgentMetadata.FrameworkIdentifiers.MafLocal}"  // Default to MAF_Local
+            };
+            _logger.LogInformation($"[AnalyzePhotoService] Calling endpoint: {endpoint} (framework: {_framework})");
             var response = await _httpClient.PostAsync(endpoint, content);
             
             _logger.LogInformation($"AnalyzePhotoService HTTP status code: {response.StatusCode}");
@@ -63,7 +71,7 @@ public class AnalyzePhotoService
         return new PhotoAnalysisResult 
         { 
             Description = $"Room analysis for prompt: {prompt}. Detected painted walls with preparation needed.",
-            DetectedMaterials = new[] { "paint", "wall", "surface preparation" }
+            DetectedMaterials = ["paint", "wall", "surface preparation"]
         };
     }
 }

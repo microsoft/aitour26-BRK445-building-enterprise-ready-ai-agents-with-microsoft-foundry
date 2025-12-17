@@ -1,6 +1,4 @@
 using CartEntities;
-using DataEntities;
-using SearchEntities;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using System.Text.Json;
 
@@ -8,14 +6,14 @@ namespace Store.Services;
 
 public class CartService
 {
-    private readonly IProductService _productService;
+    private readonly DataServiceClient.DataServiceClient _dataServiceClient;
     private readonly ProtectedSessionStorage _sessionStorage;
     private readonly ILogger<CartService> _logger;
     private const string CartSessionKey = "cart";
 
-    public CartService(IProductService productService, ProtectedSessionStorage sessionStorage, ILogger<CartService> logger)
+    public CartService(DataServiceClient.DataServiceClient dataServiceClient, ProtectedSessionStorage sessionStorage, ILogger<CartService> logger)
     {
-        _productService = productService;
+        _dataServiceClient = dataServiceClient;
         _sessionStorage = sessionStorage;
         _logger = logger;
     }
@@ -50,7 +48,7 @@ public class CartService
     {
         try
         {
-            var products = await _productService.GetProducts();
+            var products = await _dataServiceClient.GetProductsAsync();
             var product = products.FirstOrDefault(p => p.Id == productId);
             
             if (product == null)
@@ -188,11 +186,4 @@ public class CartService
             _logger.LogError(ex, "Error saving cart to session storage");
         }
     }
-}
-
-// Create interface for existing ProductService to use with dependency injection
-public interface IProductService
-{
-    Task<List<Product>> GetProducts();
-    Task<SearchResponse?> Search(string searchTerm, bool semanticSearch = false);
 }

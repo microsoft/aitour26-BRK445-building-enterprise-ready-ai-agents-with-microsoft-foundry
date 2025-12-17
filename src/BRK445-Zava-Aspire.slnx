@@ -1,0 +1,46 @@
+<Solution>
+  <Folder Name="/1 Aspire/">
+    <Project Path="ZavaAppHost/ZavaAppHost.csproj" />
+    <Project Path="ZavaServiceDefaults/ZavaServiceDefaults.csproj" />
+  </Folder>
+  <Folder Name="/2 Models/">
+    <Project Path="CartEntities/CartEntities.csproj" />
+    <Project Path="SearchEntities/SearchEntities.csproj" />
+    <Project Path="SharedEntities/SharedEntities.csproj" />
+    <Project Path="VectorEntities/VectorEntities.csproj" />
+    <Project Path="DataServiceClient/DataServiceClient.csproj" />
+  </Folder>
+  <Folder Name="/3 Store/">
+    <Project Path="Store/Store.csproj" />
+  </Folder>
+  <Folder Name="/4 Agent Services/">
+    <Project Path="MultiAgentDemo/MultiAgentDemo.csproj" />
+    <Project Path="SingleAgentDemo/SingleAgentDemo.csproj" />
+  </Folder>
+  <Folder Name="/5 Business Services/">
+    <Project Path="AnalyzePhotoService/AnalyzePhotoService.csproj" />
+    <Project Path="CustomerInformationService/CustomerInformationService.csproj" />
+    <Project Path="InventoryService/InventoryService.csproj" />
+    <Project Path="LocationService/LocationService.csproj" />
+    <Project Path="MatchmakingService/MatchmakingService.csproj" />
+    <Project Path="NavigationService/NavigationService.csproj" />
+    <Project Path="DataService/DataService.csproj" />
+    <Project Path="ProductSearchService/ProductSearchService.csproj" Id="ddec019a-fde1-4ac3-862b-dffa4d38efbe" />
+    <Project Path="ToolReasoningService/ToolReasoningService.csproj" />
+  </Folder>
+  <Folder Name="/6 MAF/">
+    <Project Path="ZavaMAFFoundry/ZavaMAFFoundry.csproj" Id="cedf7ed7-47e5-4733-a184-fe36eeb23aeb" />
+    <Project Path="ZavaMAFLocal/ZavaMAFLocal.csproj" />
+  </Folder>
+  <Folder Name="/7 Support/">
+    <Project Path="ZavaAgentsMetadata/ZavaAgentsMetadata.csproj" />
+    <Project Path="ZavaDatabaseInitialization/ZavaDatabaseInitialization.csproj" />
+    <Project Path="ZavaWorkingModes/ZavaWorkingModes.csproj" />
+  </Folder>
+  <Folder Name="/9 Tests/">
+    <Project Path="DataService.Tests/DataService.Tests.csproj" />
+    <Project Path="Store.Tests/Store.Tests.csproj" />
+    <Project Path="ZavaMAFFoundry.Tests/ZavaMAFFoundry.Tests.csproj" />
+    <Project Path="ZavaMAFLocal.Tests/ZavaMAFLocal.Tests.csproj" />
+  </Folder>
+</Solution>

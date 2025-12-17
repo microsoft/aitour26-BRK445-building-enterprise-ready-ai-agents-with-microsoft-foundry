@@ -1,8 +1,8 @@
 ﻿@page "/products"
-@using DataEntities
+@using SharedEntities
 @using Store.Services
 @using Store.Components.Cart
-@inject IProductService ProductService
+@inject DataServiceClient.DataServiceClient DataServiceClient;
 @inject IConfiguration Configuration
 @attribute [StreamRendering(true)]
 
@@ -57,14 +57,11 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        // Simulate asynchronous loading to demonstrate streaming rendering
-        await Task.Delay(500);
-        products = await ProductService.GetProducts();
+        products = await DataServiceClient.GetProductsAsync();
     }
 
     private Task OnCartUpdated()
     {
-        // This can be used to refresh cart count or show notifications
         return Task.CompletedTask;
     }
 }

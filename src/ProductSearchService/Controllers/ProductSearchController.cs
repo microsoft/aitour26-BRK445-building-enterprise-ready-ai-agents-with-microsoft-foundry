@@ -1,16 +1,8 @@
-#pragma warning disable SKEXP0110
-
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Agents.AI;
-using Microsoft.Extensions.AI;
-using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.Agents.AzureAI;
-using Microsoft.SemanticKernel.ChatCompletion;
-using Shared.Models;
+using Microsoft.AspNetCore.Mvc;
 using SharedEntities;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using ZavaAgentsMetadata;
+using ZavaMAFLocal;
 
 namespace ProductSearchService.Controllers;
 
@@ -19,56 +11,48 @@ namespace ProductSearchService.Controllers;
 public class ProductSearchController : ControllerBase
 {
     private readonly ILogger<ProductSearchController> _logger;
-    private readonly AzureAIAgent _skAgent;
     private readonly AIAgent _agentFxAgent;
-    private readonly IChatClient _chatClient;
 
     public ProductSearchController(
         ILogger<ProductSearchController> logger,
-        AzureAIAgent skAgent,
-        AIAgent agentFxAgent,
-        IChatClient chatClient)
+        MAFLocalAgentProvider localAgentProvider)
     {
         _logger = logger;
-        _skAgent = skAgent;
-        _agentFxAgent = agentFxAgent;
-        _chatClient = chatClient;
+        _agentFxAgent = localAgentProvider.GetAgentByName(AgentMetadata.GetAgentName(AgentType.ProductSearchAgent));
     }
 
     [HttpPost("search/llm")]
     public async Task<ActionResult<ToolRecommendation[]>> SearchInventoryLlmAsync([FromBody] InventorySearchRequest request, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("[LLM] Searching inventory for query: {SearchQuery}", request.SearchQuery);
+        _logger.LogInformation($"{AgentMetadata.LogPrefixes.Llm} Searching inventory for query: {{SearchQuery}}", request.SearchQuery);
 
+        // LLM endpoint uses MAF under the hood since we removed SK
         return await SearchProductsAsync(
             request,
-            InvokeLlmAsync,
-            "[LLM]",
+            InvokeAgentFrameworkAsync,
+            AgentMetadata.LogPrefixes.Llm,
             cancellationToken);
     }
 
-    [HttpPost("search/sk")]
-    public async Task<ActionResult<ToolRecommendation[]>> SearchInventorySkAsync([FromBody] InventorySearchRequest request, CancellationToken cancellationToken)
+    [HttpPost("search/maf")]  // Using constant AgentMetadata.FrameworkIdentifiers.Maf
+    public async Task<ActionResult<ToolRecommendation[]>> SearchInventoryMAFAsync([FromBody] InventorySearchRequest request, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("[SK] Searching inventory for query: {SearchQuery}", request.SearchQuery);
-
-        return await SearchProductsAsync(
-            request,
-            InvokeSemanticKernelAsync,
-            "[SK]",
-            cancellationToken);
-    }
-
-    [HttpPost("search/agentfx")]
-    public async Task<ActionResult<ToolRecommendation[]>> SearchInventoryAgentFxAsync([FromBody] InventorySearchRequest request, CancellationToken cancellationToken)
-    {
-        _logger.LogInformation("[AgentFx] Searching inventory for query: {SearchQuery}", request.SearchQuery);
+        _logger.LogInformation($"{AgentMetadata.LogPrefixes.Maf} Searching inventory for query: {{SearchQuery}}", request.SearchQuery);
 
         return await SearchProductsAsync(
             request,
             InvokeAgentFrameworkAsync,
-            "[AgentFx]",
+            AgentMetadata.LogPrefixes.Maf,
             cancellationToken);
+    }
+
+    [HttpPost("search/directcall")]
+    public ActionResult<ToolRecommendation[]> SearchInventoryDirectCallAsync([FromBody] InventorySearchRequest request)
+    {
+        _logger.LogInformation("[DirectCall] Searching inventory for query: {SearchQuery}", request.SearchQuery);
+
+        // DirectCall mode bypasses AI orchestration and returns fallback response immediately
+        return Ok(BuildFallbackRecommendations(request.SearchQuery));
     }
 
     [HttpGet("search/{sku}")]
@@ -160,25 +144,6 @@ public class ProductSearchController : ControllerBase
         }
 
         return Ok(BuildFallbackRecommendations(request.SearchQuery));
-    }
-
-    private async Task<string> InvokeLlmAsync(string prompt, CancellationToken cancellationToken)
-    {
-        var response = await _chatClient.GetResponseAsync(prompt, cancellationToken: cancellationToken);
-        return response.Text ?? string.Empty;
-    }
-
-    private async Task<string> InvokeSemanticKernelAsync(string prompt, CancellationToken cancellationToken)
-    {
-        var sb = new StringBuilder();
-        AzureAIAgentThread agentThread = new(_skAgent.Client);
-
-        await foreach (ChatMessageContent response in _skAgent.InvokeAsync(prompt, agentThread).WithCancellation(cancellationToken))
-        {
-            sb.Append(response.Content);
-        }
-
-        return sb.ToString();
     }
 
     private async Task<string> InvokeAgentFrameworkAsync(string prompt, CancellationToken cancellationToken)

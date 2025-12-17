@@ -1,0 +1,233 @@
+@page "/data"
+@rendermode InteractiveServer
+@using SharedEntities
+@inject DataServiceClient.DataServiceClient DataServiceClient
+
+<PageTitle>Database Viewer</PageTitle>
+
+<div class="container mt-4">
+    <h1 class="mb-4">Database Viewer</h1>
+    <p class="lead">View all data from the DataService database tables</p>
+
+    @if (isLoading)
+    {
+        <div class="text-center my-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading data...</p>
+        </div>
+    }
+    else
+    {
+        <!-- Products Section -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-dark">
+                <h3 class="mb-0">
+                    <i class="bi bi-box-seam"></i> Products (@products.Count)
+                </h3>
+            </div>
+            <div class="card-body">
+                @if (products.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Description</th>
+                                    <th>Price</th>
+                                    <th>Image</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var product in products)
+                                {
+                                    <tr>
+                                        <td>@product.Id</td>
+                                        <td>@product.Name</td>
+                                        <td>@product.Description</td>
+                                        <td>$@product.Price.ToString("F2")</td>
+                                        <td>@product.ImageUrl</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted">No products found.</p>
+                }
+            </div>
+        </div>
+
+        <!-- Customers Section -->
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h3 class="mb-0">
+                    <i class="bi bi-people"></i> Customers (@customers.Count)
+                </h3>
+            </div>
+            <div class="card-body">
+                @if (customers.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Owned Tools</th>
+                                    <th>Skills</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var customer in customers)
+                                {
+                                    <tr>
+                                        <td>@customer.Id</td>
+                                        <td>@customer.Name</td>
+                                        <td>@string.Join(", ", customer.OwnedTools)</td>
+                                        <td>@string.Join(", ", customer.Skills)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted">No customers found.</p>
+                }
+            </div>
+        </div>
+
+        <!-- Tools Section -->
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h3 class="mb-0">
+                    <i class="bi bi-tools"></i> Tools Inventory (@tools.Count)
+                </h3>
+            </div>
+            <div class="card-body">
+                @if (tools.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>SKU</th>
+                                    <th>Name</th>
+                                    <th>Description</th>
+                                    <th>Price</th>
+                                    <th>Available</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var tool in tools)
+                                {
+                                    <tr>
+                                        <td>@tool.Sku</td>
+                                        <td>@tool.Name</td>
+                                        <td>@tool.Description</td>
+                                        <td>$@tool.Price.ToString("F2")</td>
+                                        <td>
+                                            @if (tool.IsAvailable)
+                                            {
+                                                <span class="badge bg-success">Available</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger">Out of Stock</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted">No tools found.</p>
+                }
+            </div>
+        </div>
+
+        <!-- Locations Section -->
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h3 class="mb-0">
+                    <i class="bi bi-geo-alt"></i> Store Locations (@locations.Count)
+                </h3>
+            </div>
+            <div class="card-body">
+                @if (locations.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Section</th>
+                                    <th>Aisle</th>
+                                    <th>Shelf</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var location in locations)
+                                {
+                                    <tr>
+                                        <td>@location.Section</td>
+                                        <td>@location.Aisle</td>
+                                        <td>@location.Shelf</td>
+                                        <td>@location.Description</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted">No locations found.</p>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<Product> products = new();
+    private List<CustomerInformation> customers = new();
+    private List<ToolRecommendation> tools = new();
+    private List<StoreLocation> locations = new();
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            isLoading = true;
+            
+            // Load all data in parallel for better performance
+            var productsTask = DataServiceClient.GetProductsAsync();
+            var customersTask = DataServiceClient.GetCustomersAsync();
+            var toolsTask = DataServiceClient.GetToolsAsync();
+            var locationsTask = DataServiceClient.GetLocationsAsync();
+
+            await Task.WhenAll(productsTask, customersTask, toolsTask, locationsTask);
+
+            products = await productsTask;
+            customers = await customersTask;
+            tools = await toolsTask;
+            locations = await locationsTask;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}
