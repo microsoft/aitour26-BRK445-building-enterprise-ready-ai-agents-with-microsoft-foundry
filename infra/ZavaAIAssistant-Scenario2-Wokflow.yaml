@@ -1,0 +1,51 @@
+kind: workflow
+trigger:
+  kind: OnConversationStart
+  id: trigger_wf
+  actions:
+    - kind: InvokeAzureAgent
+      id: agent1
+      agent:
+        name: ProductSearchAgent
+      description: First agent in sequential workflow
+      conversationId: =System.ConversationId
+      input:
+        messages: =System.LastMessage
+      output:
+        messages: Local.LatestMessage
+        autoSend: true
+    - kind: InvokeAzureAgent
+      id: agent2
+      agent:
+        name: ProductMatchmakingAgent
+      conversationId: =System.ConversationId
+      description: Second agent in sequential workflow
+      input:
+        messages: =Local.LatestMessage
+      output:
+        messages: Local.LatestMessage
+        autoSend: true
+    - kind: InvokeAzureAgent
+      id: agent3
+      agent:
+        name: LocationServiceAgent
+      conversationId: =System.ConversationId
+      description: Third agent in sequential workflow
+      input:
+        messages: =Local.LatestMessage
+      output:
+        messages: Local.LatestMessage
+        autoSend: true
+    - kind: InvokeAzureAgent
+      id: action-1766435428513
+      agent:
+        name: NavigationAgent
+      input:
+        messages: =System.LastMessage
+      output:
+        autoSend: true
+    - kind: EndConversation
+      id: action-1766435439695
+id: ""
+name: ZavaAIAssistant-Scenario2
+description: ""
