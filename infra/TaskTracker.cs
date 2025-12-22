@@ -405,7 +405,7 @@ public class TaskTracker
     {
         // First truncate the message
         var truncated = TruncateLogMessage(message);
-        
+
         // Try to validate if this is valid markup
         try
         {
@@ -426,7 +426,7 @@ public class TaskTracker
                 content = System.Text.RegularExpressions.Regex.Replace(content, @"\[/\]$", "");
                 return $"[{color}]{Markup.Escape(content)}[/]";
             }
-            
+
             // Otherwise just escape everything
             return Markup.Escape(truncated);
         }
@@ -477,27 +477,25 @@ public class TaskTracker
 
         // Sequential prompt definitions - only ask for values not already in user secrets
         var prompts = new List<(string key, string label, bool required, string current)>();
-        
+
         // Add prompts only for values not already set
         if (string.IsNullOrWhiteSpace(defaultProjectEndpoint))
         {
             prompts.Add(("project", "Enter Project Endpoint", true, project));
         }
-        
+
         if (string.IsNullOrWhiteSpace(defaultModelDeploymentName))
         {
             prompts.Add(("model", "Enter Model Deployment Name", true, model));
         }
-        
+
         if (string.IsNullOrWhiteSpace(defaultTenantId))
         {
             prompts.Add(("tenant", "Enter Tenant ID (optional, press ESC to skip)", false, tenant));
         }
-        
-        if (string.IsNullOrWhiteSpace(defaultSqlServerConnectionString))
-        {
-            prompts.Add(("sqlserver", "Enter SQL Server Connection String (optional, press ESC to skip)", false, sqlServer));
-        }
+
+        // Do not prompt interactively for SQL Server connection string here.
+        // The application will use a connection string provided via user secrets or environment variables.
 
         foreach (var p in prompts.ToList())
         {
@@ -588,17 +586,17 @@ public class TaskTracker
         {
             AddLog($"[green]✓[/] Project Endpoint accepted from user secrets");
         }
-        
+
         if (!string.IsNullOrWhiteSpace(defaultModelDeploymentName))
         {
             AddLog($"[green]✓[/] Model Deployment Name accepted from user secrets");
         }
-        
+
         if (!string.IsNullOrWhiteSpace(defaultTenantId))
         {
             AddLog($"[green]✓[/] Tenant ID accepted from user secrets");
         }
-        
+
         if (!string.IsNullOrWhiteSpace(defaultSqlServerConnectionString))
         {
             AddLog($"[green]✓[/] SQL Server Connection String accepted from user secrets");

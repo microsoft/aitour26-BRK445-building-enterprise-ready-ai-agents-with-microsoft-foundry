@@ -48,11 +48,10 @@ try
     taskTracker.CompleteTask("Set Environment Values");
     taskTracker.IncrementProgress(); // Count environment setup as 1 step
 
-    // Ask user if they want to initialize the database
-    bool initializeDb = taskTracker.PromptYesNo("Do you want to initialize the Azure SQL Database?", defaultValue: false);
-
-    if (initializeDb)
+    // Initialize the database automatically if a connection string was provided (no interactive prompt)
+    if (!string.IsNullOrWhiteSpace(sqlServerConnectionString))
     {
+        taskTracker.AddLog("[grey]SQL connection string provided - initializing database (non-interactive)...[/]");
         await DbInitializationHelper.InitializeDatabaseAsync(taskTracker);
     }
 
