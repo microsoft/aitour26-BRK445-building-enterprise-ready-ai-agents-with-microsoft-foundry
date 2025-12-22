@@ -26,7 +26,7 @@ public class MAFFoundryAgentProvider
 
         _persistentAgentClient = new PersistentAgentsClient(
             aiFoundryProjectEndpoint!,
-            new AzureCliCredential());
+            tokenCredential);
     }
 
     /// <summary>
