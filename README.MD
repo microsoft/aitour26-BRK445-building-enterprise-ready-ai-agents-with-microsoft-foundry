@@ -31,7 +31,7 @@ Developers, architects, and AI engineers who build production-grade agentic appl
 
 ## What's in this repository
 
--- `src/` — Example source code used by the demos (C#, .NET 10).  
+- `src/` — Example source code used by the demos (C#, .NET 10).  
 - `session-delivery-resources/` — slides, demos, and presenter notes
 
 ## 💻 Development Setup
@@ -40,7 +40,7 @@ Developers, architects, and AI engineers who build production-grade agentic appl
 
 The devcontainer is configured to:
 
--- ✅ Install .NET 10 SDK and Aspire workloads
+- ✅ Install .NET 10 SDK and Aspire workloads
 - ✅ Install Aspire CLI tool
 
 #### Troubleshooting (Windows + WSL + Docker Desktop)
