@@ -8,15 +8,14 @@ using SharedEntities;
 using System.Text;
 using VectorEntities;
 using ZavaDatabaseInitialization;
-using ZavaMAFFoundry;
 
 namespace DataService.Memory;
 
 public class MemoryContext
 {
     private ILogger _logger;
-    private IChatClient? _chatClient;
-    private IEmbeddingGenerator<string, Embedding<float>>? _embeddingGenerator;
+    private readonly IChatClient? _chatClient;
+    private readonly IEmbeddingGenerator<string, Embedding<float>>? _embeddingGenerator;
     private VectorStoreCollection<int, ProductVector>? _productsCollection;
     private string _systemPrompt = "";
     private bool _isMemoryCollectionInitialized = false;
@@ -71,8 +70,6 @@ public class MemoryContext
                 var result = await _embeddingGenerator.GenerateVectorAsync(productInfo);
                 productVector.Vector = result.ToArray();
 
-                //var result = await _embeddingClient.GenerateEmbeddingsAsync([productInfo]);
-                //productVector.Vector = result.Value[0].ToFloats();
                 await _productsCollection.UpsertAsync(productVector);
                 _logger.LogInformation("Product added to memory: {Product}", product.Name);
             }

@@ -36,8 +36,7 @@ builder.Services.AddSingleton(sp =>
     logger.LogInformation("Creating memory context");
     return new MemoryContext(logger, 
         sp.GetService<IChatClient>(), 
-        sp.GetService<IEmbeddingGenerator<string, Embedding<float>>>(),
-        sp.GetService<OpenAI.Embeddings.EmbeddingClient>());
+        sp.GetService<IEmbeddingGenerator<string, Embedding<float>>>());
 });
 
 // Add services to the container.
