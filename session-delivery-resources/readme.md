@@ -13,7 +13,7 @@ Prior to delivering the workshop please:
 | Resource | Link | Type | Description |
 |---|---|---:|---|
 | Session Delivery Deck | [Deck](https://aka.ms/AAxri1f) | External | Main slide deck for the session |
-| Full Session Recording | [Recording VS2022](https://youtu.be/AwKSBaA2HXQ) <br> -- <br> [Recording CodeSpaces](https://aka.ms/AAyf6x6) | External | Full train-the-trainer recorded session |
+| Full Session Recording | [Recording CodeSpaces](https://aka.ms/AAxrpql) | External | Full train-the-trainer recorded session |
 | Demo source code | [`/src` demo source](../src) | Internal | Demo source code used in the live demos |
 | Prerequisites | [`Prerequisites`](./docs/Prerequisites.md) | Internal | Tooling and access required to run the demos |
 | Cloud Resources | [`Needed Cloud Resources`](./docs/02.NeededCloudResources.md) | Internal | Cloud resources required to run the demos |
@@ -31,13 +31,13 @@ The workshop mixes short live demos with recorded segments for reference.
 | Time | Segment | Mode | Notes |
 |---:|---|---|---|
 | 07 mins | Introduction & content | Live | Presenter: lead — slides 1–3 |
-| 06 mins | Demo — AI Foundry Agents | Live (recorded fallback) | [Recorded demo](https://aka.ms/AAxri1g) |
+| 06 mins | Demo — AI Foundry Agents | Live (recorded fallback) | [Recorded demo](https://aka.ms/AAz3su8) |
 | 04 mins | Content | Live | Key point: agent overview |
-| 06 mins | Demo — Aspire + Single Agent | Recorded (recommended) | [Recorded demo VS2022](https://aka.ms/AAxrpqj) <br> [Recorded demo CodeSpaces](https://aka.ms/AAyescm) |
+| 06 mins | Demo — Aspire + Single Agent | Recorded (recommended) | [Recorded demo CodeSpaces](https://aka.ms/AAz480e) |
 | 03 mins | Content | Live | Transition & Q&A |
-| 07 mins | Demo — Multi-Agent Orchestration | Live (recorded fallback) | [Recorded demo](https://aka.ms/AAxrab6)  <br> [Recorded demo CodeSpaces](https://aka.ms/AAyescl) |
+| 07 mins | Demo — Multi-Agent Orchestration | Live (recorded fallback) | [Recorded demo CodeSpaces](https://aka.ms/AAz408f) |
 | 04 mins | Content | Live | Observability & tracing |
-| 02 mins | Demo — Azure Monitor & Diagnostics | Recorded | [Recorded demo](https://aka.ms/AAxrpqk) |
+| 02 mins | Demo — Azure Monitor & Diagnostics | Recorded | [Recorded demo](https://aka.ms/AAz3su9) |
 | 04 mins | Content / Q&A | Live | Wrap-up & next steps |
 
 ### 🏋️Preparation (presenter quick-check)
@@ -55,14 +55,3 @@ Fallback & recording guidance
 
 - If a live demo fails (service doesn't start, index not ready, or external resource is inaccessible) — play the recorded demo clip for that segment and mark the runbook with the issue.
 - For fragile demos (search/indexing, external APIs), prefer the recorded fallback during high-risk sessions.
-
-### 🖥️Demos
-
-All demos reference the userguide files in the `session-delivery-resources/Demo/` folder. For each demo, use the referenced minimal userguide for talking points. If a demo is fragile or long-running, prefer a recorded segment.
-
-| Demo | Link | Type | Mode | Short description |
-|---:|---|---:|---|---|
-| 01 | [AI Foundry Agents](./Demo/01/01_demo_minimal.md) | Internal | Live (recorded fallback) | Agent/playground management; create/configure agents; demonstrate inventory agent returning structured JSON. |
-| 02 | [Aspire — Single Agent](./Demo/02/02_demo_minimal.md) | Internal | Recorded (recommended) | Single-agent flow using Aspire orchestration: semantic search and image analysis workflow. |
-| 03 | [Multi-Agent Orchestration](./Demo/03/03_demo_minimal.md) | Internal | Live (recorded fallback) | Orchestration patterns (sequential, concurrent, handoff); triggers across inventory, matchmaking, location, navigation services. |
-| 04 | [Azure Monitor & AI Foundry Diagnostics](./Demo/04/04_demo_minimal.md) | Internal | Recorded | Use Azure Monitor and AI Foundry diagnostics to locate and investigate model/service issues. |
