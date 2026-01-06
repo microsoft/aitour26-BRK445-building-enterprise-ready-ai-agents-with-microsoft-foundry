@@ -119,7 +119,11 @@ var store = builder.AddProject<Projects.Store>("store")
     
     .WaitFor(singleAgentDemo).WithReference(singleAgentDemo)
     .WaitFor(multiAgentDemo).WithReference(multiAgentDemo)
+
+    //.WithEnvironment("singleAgentDemoDevUIUrl", singleAgentDemoEndpointUrl)
+
     .WithExternalHttpEndpoints();
+
 
 // ============================================================================
 // SECTION 6: ENVIRONMENT-SPECIFIC CONFIGURATION
