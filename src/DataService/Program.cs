@@ -20,7 +20,6 @@ var connectionString = builder.Configuration.GetConnectionString("productsDb") ?
 builder.Services.AddDbContext<Context>(options =>
     options.UseSqlite(connectionString));
 
-
 builder.Services.AddSingleton<IConfiguration>(sp =>
 {
     return builder.Configuration;
