@@ -132,28 +132,28 @@ public static class StepsProcessor
     /// </summary>
     public static List<ProductAlternative> GenerateDefaultProductAlternatives()
     {
-        return
-        [
+        return new List<ProductAlternative>
+        {
             new ProductAlternative
             {
-                Name = "Alternative Product A",
-                Sku = "ALT-001",
-                Price = 89.99m,
+                Name = "Paint Sprayer - TurboSpray 750 (Standard Kit)",
+                Sku = "TS-750-S",
+                Price = 199.99m,
                 InStock = true,
-                Location = "Aisle 5",
-                Aisle = 5,
-                Section = "B"
+                Location = "Aisle 12",
+                Aisle = 12,
+                Section = "D"
             },
             new ProductAlternative
             {
-                Name = "Alternative Product B",
-                Sku = "ALT-002",
-                Price = 49.99m,
+                Name = "Paint Sprayer - TurboSpray 750 (Pro Kit)",
+                Sku = "TS-750-P",
+                Price = 349.99m,
                 InStock = true,
-                Location = "Aisle 8",
-                Aisle = 8,
-                Section = "C"
+                Location = "Aisle 12",
+                Aisle = 12,
+                Section = "D"
             }
-        ];
+        };
     }
 }

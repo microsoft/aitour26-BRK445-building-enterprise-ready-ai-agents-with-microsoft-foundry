@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using SharedEntities;
 
 namespace MultiAgentDemo.Services;
@@ -59,13 +61,26 @@ public class MatchmakingAgentService
 
     private static MatchmakingResult CreateFallbackResult(string productQuery) => new()
     {
-        Alternatives =
-        [
-            new ProductInfo { Name = $"Alternative for {productQuery}", Sku = "ALT-001", Price = 19.99m, IsAvailable = true }
-        ],
-        SimilarProducts =
-        [
-            new ProductInfo { Name = $"Similar to {productQuery}", Sku = "SIM-001", Price = 24.99m, IsAvailable = true }
-        ]
+        Alternatives = string.Equals(productQuery, "Paint Sprayer - TurboSpray 750", StringComparison.OrdinalIgnoreCase)
+            ? new ProductInfo[]
+            {
+                new ProductInfo { Name = "Paint Sprayer - TurboSpray 750 (Standard Kit)", Sku = "TS-750-S", Price = 199.99m, IsAvailable = true },
+                new ProductInfo { Name = "Paint Sprayer - TurboSpray 750 (Pro Kit)", Sku = "TS-750-P", Price = 349.99m, IsAvailable = true }
+            }
+            : new ProductInfo[]
+            {
+                new ProductInfo { Name = $"Alternative for {productQuery}", Sku = "ALT-001", Price = 19.99m, IsAvailable = true }
+            },
+
+        SimilarProducts = string.Equals(productQuery, "Paint Sprayer - TurboSpray 750", StringComparison.OrdinalIgnoreCase)
+            ? new ProductInfo[]
+            {
+                new ProductInfo { Name = "TurboSpray 650 (previous model)", Sku = "TS-650", Price = 159.99m, IsAvailable = true },
+                new ProductInfo { Name = "TurboSpray 750 Accessory Kit", Sku = "TS-750-A", Price = 49.99m, IsAvailable = true }
+            }
+            : new ProductInfo[]
+            {
+                new ProductInfo { Name = $"Similar to {productQuery}", Sku = "SIM-001", Price = 24.99m, IsAvailable = true }
+            }
     };
 }
