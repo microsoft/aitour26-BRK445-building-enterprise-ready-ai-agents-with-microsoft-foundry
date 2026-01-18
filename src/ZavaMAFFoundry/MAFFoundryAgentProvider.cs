@@ -29,7 +29,9 @@ public class MAFFoundryAgentProvider
         _configuration = configuration;
         _tenantId = tenantId;
 
-        DefaultAzureCredential tokenCredential = GetAzureCredentials();
+        //DefaultAzureCredential tokenCredential = GetAzureCredentials();
+
+        AzureCliCredential tokenCredential = GetAzureCliCredentials();
 
         _projectClient = new(
             endpoint: new Uri(microsoftFoundryProjectEndpoint),
@@ -127,6 +129,18 @@ public class MAFFoundryAgentProvider
             { TenantId = _tenantId };
         }
         var tokenCredential = new DefaultAzureCredential(options: credentialOptions);
+        return tokenCredential;
+    }
+
+    private AzureCliCredential GetAzureCliCredentials()
+    {
+        var credentialOptions = new AzureCliCredentialOptions();
+        if (!string.IsNullOrEmpty(_tenantId))
+        {
+            credentialOptions = new AzureCliCredentialOptions()
+            { TenantId = _tenantId };
+        }
+        var tokenCredential = new AzureCliCredential(options: credentialOptions);
         return tokenCredential;
     }
 
