@@ -18,11 +18,26 @@ public class InventoryService
     /// <summary>
     /// Sets the agent framework to use for service calls
     /// </summary>
-    /// <param name="framework">"llm" for LLM Direct Call, or "maf" for Microsoft Agent Framework</param>
+    /// <param name="framework">"llm" for LLM Direct Call, "maf_local" for MAF Local, "maf_foundry" for MAF Foundry, or "directcall" for Direct Call</param>
     public void SetFramework(string framework)
     {
-        _framework = framework?.ToLowerInvariant() ?? "maf";
+        _framework = framework?.ToLowerInvariant() ?? AgentMetadata.FrameworkIdentifiers.MafLocal;
         _logger.LogInformation($"[InventoryService] Framework set to: {_framework}");
+    }
+
+    /// <summary>
+    /// Maps framework identifier to the corresponding controller endpoint name
+    /// </summary>
+    private string GetEndpointForFramework(string framework)
+    {
+        return framework switch
+        {
+            AgentMetadata.FrameworkIdentifiers.MafLocal => "searchmaf_local",
+            AgentMetadata.FrameworkIdentifiers.MafFoundry => "searchmaf_foundry",
+            AgentMetadata.FrameworkIdentifiers.Llm => "search_llm",
+            AgentMetadata.FrameworkIdentifiers.DirectCall => "search_directcall",
+            _ => "searchmaf_local" // Default fallback
+        };
     }
 
     public async Task<ToolRecommendation[]> EnrichWithInventoryAsync(ToolRecommendation[] tools)
@@ -36,9 +51,13 @@ public class InventoryService
 
             var searchRequest = new InventorySearchRequest { SearchQuery = searchQuery };
             
-            var endpoint = $"/api/Inventory/search{_framework}";
+            var endpointName = GetEndpointForFramework(_framework);
+            var endpoint = $"/api/Inventory/{endpointName}";
             _logger.LogInformation($"[InventoryService] Calling endpoint: {endpoint}");
-            var response = await _httpClient.PostAsJsonAsync(endpoint, searchRequest);
+            
+            // Create a cancellation token with a 15-second timeout
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            var response = await _httpClient.PostAsJsonAsync(endpoint, searchRequest, cts.Token);
             
             _logger.LogInformation($"InventoryService HTTP status code: {response.StatusCode}");
             
@@ -50,11 +69,15 @@ public class InventoryService
             
             _logger.LogWarning("InventoryService returned non-success status: {StatusCode}", response.StatusCode);
         }
+        catch (OperationCanceledException ex)
+        {
+            _logger.LogError(ex, "InventoryService call timed out after 15 seconds");
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error calling InventoryService");
         }
 
-        return tools; // Return original tools if inventory service fails
+        return tools; // Return original tools if inventory service fails or times out
     }
 }

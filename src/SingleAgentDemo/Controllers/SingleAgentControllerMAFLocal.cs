@@ -57,19 +57,28 @@ public class SingleAgentControllerMAFLocal : ControllerBase
 
         // Create a single orchestrator agent with all tools
         var instructions = @"You are an AI assistant that helps analyze images and recommend tools for DIY projects.
+
+CRITICAL: You MUST execute ALL four tools in the exact order specified below. Do not skip any tool.
+
 You have access to four tools:
 1. PerformPhotoAnalysis - Analyzes uploaded photos to identify materials and surfaces
 2. GetCustomerInformation - Retrieves customer profile including owned tools and skills
 3. PerformToolReasoning - Determines what tools are needed based on photo analysis and customer info
 4. PerformInventoryCheck - Checks inventory availability and pricing for recommended tools
 
-When analyzing a request:
-1. First, perform photo analysis to understand the project
-2. Then, get customer information to know what tools they already have
-3. Use tool reasoning to determine what additional tools are needed
-4. Finally, check inventory for availability and pricing
+Mandatory execution order:
+STEP 1: Call PerformPhotoAnalysis with the task description to analyze the uploaded image
+STEP 2: Call GetCustomerInformation with the customer ID to get their profile
+STEP 3: Call PerformToolReasoning with context from steps 1 and 2 to determine needed tools
+STEP 4: Call PerformInventoryCheck with the list of tool SKUs from step 3 (comma-separated)
 
-Always call the tools in this order for best results.";
+IMPORTANT: 
+- Always execute all four steps in order
+- Pass specific parameters: task description, customer ID, context, and SKU list
+- Do not make assumptions; always get data from tools
+- Return the complete analysis from all tool results
+
+After calling all tools, provide a comprehensive summary including photo analysis, customer profile, recommended tools, and pricing information.";
 
         IChatClient chatClient = foundryAgentProvider.GetChatClient();
         _orchestratorAgent = chatClient.CreateAIAgent(
@@ -304,13 +313,13 @@ Provide a comprehensive analysis based on all tool results.";
 
         try
         {
-            // Parse tools from comma-separated string or extract from reasoning result
+            // Parse tools from comma-separated string
             var toolArray = tools.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             
             if (toolArray.Length == 0)
             {
-                // Extract tool names from reasoning result as fallback
-                toolArray = ["PAINT-ROLLER-9IN", "BRUSH-SET-3PC", "DROP-CLOTH-9X12"];
+                _logger.LogWarning("PerformInventoryCheck: No tools provided in input");
+                throw new ArgumentException("Tool list cannot be empty. Provide comma-separated SKU values.");
             }
 
             var toolRecommendations = toolArray.Select(tool => new ToolRecommendation 
@@ -331,12 +340,7 @@ Provide a comprehensive analysis based on all tool results.";
         catch (Exception ex)
         {
             _logger.LogError(ex, "MCP Tool: PerformInventoryCheck failed");
-            _inventoryResult =
-            [
-                new ToolRecommendation { Name = "Paint Roller", Sku = "PAINT-ROLLER-9IN", IsAvailable = true, Price = 12.99m, Description = "9-inch paint roller" },
-                new ToolRecommendation { Name = "Paint Brush Set", Sku = "BRUSH-SET-3PC", IsAvailable = true, Price = 24.99m, Description = "3-piece brush set" }
-            ];
-            return JsonSerializer.Serialize(_inventoryResult);
+            throw;
         }
     }
 

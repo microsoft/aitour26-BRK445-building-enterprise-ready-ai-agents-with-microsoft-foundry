@@ -16,13 +16,6 @@ builder.Services.AddSwaggerGen();
 // Add DataServiceClient for accessing DataService endpoints
 builder.Services.AddDataServiceClient("https+http://dataservice");
 
-builder.Services.AddScoped<ToolReasoningService>();
-builder.Services.AddHttpClient<ToolReasoningService>(
-    static client => client.BaseAddress = new("http+https://toolreasoningservice"));
-
-builder.Services.AddScoped<InventoryService>();
-builder.Services.AddHttpClient<InventoryService>(
-    static client => client.BaseAddress = new("http+https://inventoryservice"));
 // Add DataServiceClient for accessing DataService endpoints
 builder.Services.AddDataServiceClient("https+http://dataservice", builder.Environment.IsDevelopment());
 
@@ -57,7 +50,8 @@ app.MapGet("/health/log", (ILogger<Program> logger, IConfiguration config) =>
 
     logger.LogInformation("SingleAgentDemo Config - Env: {Env}, AppInsights: {AppInsights}, FoundryCnn: {FoundryCnn}, FoundryProject: {FoundryProject}", env, appInsights, foundryCnn, foundryProject);
 
-    return Results.Ok(new {
+    return Results.Ok(new
+    {
         service = "singleagentdemo",
         env,
         appInsights = string.IsNullOrEmpty(appInsights) ? "<not-set>" : "set",
@@ -88,6 +82,13 @@ app.Run();
 /// </summary>
 static void RegisterHttpClients(WebApplicationBuilder builder)
 {
+    // Register service dependencies as scoped
+    builder.Services.AddScoped<ToolReasoningService>();
+    builder.Services.AddScoped<InventoryService>();
+    builder.Services.AddScoped<AnalyzePhotoService>();
+    builder.Services.AddScoped<CustomerInformationService>();
+    builder.Services.AddScoped<ProductSearchService>();
+
     if (builder.Environment.IsDevelopment())
     {
         builder.Services.AddHttpClient<AnalyzePhotoService>(

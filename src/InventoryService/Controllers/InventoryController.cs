@@ -19,7 +19,7 @@ public class InventoryController : ControllerBase
         _dataServiceClient = dataServiceClient;
     }
 
-    [HttpPost("searchllm")]
+    [HttpPost("search_llm")]
     public async Task<ActionResult<ToolRecommendation[]>> SearchInventoryLlmAsync([FromBody] InventorySearchRequest request, CancellationToken cancellationToken)
     {
         _logger.LogInformation($"{AgentMetadata.LogPrefixes.Llm} Searching inventory for query: {{SearchQuery}}", request.SearchQuery);
@@ -46,7 +46,7 @@ public class InventoryController : ControllerBase
         return await SearchInventoryFromDataServiceAsync(request, AgentMetadata.LogPrefixes.MafFoundry, cancellationToken);
     }
 
-    [HttpPost("searchdirectcall")]
+    [HttpPost("search_directcall")]
     public async Task<ActionResult<ToolRecommendation[]>> SearchInventoryDirectCallAsync([FromBody] InventorySearchRequest request, CancellationToken cancellationToken)
     {
         _logger.LogInformation($"{AgentMetadata.LogPrefixes.DirectCall} Searching inventory for query: {{SearchQuery}}", request.SearchQuery);
