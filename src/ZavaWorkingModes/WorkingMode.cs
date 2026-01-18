@@ -31,7 +31,7 @@ public enum WorkingMode
     MafLocal,
 
     /// <summary>
-    /// Microsoft Agent Framework using locally hosted Ollama models (ministral-3 for chat, all-minilm for embeddings).
+    /// Microsoft Agent Framework using locally hosted Ollama models (llama3.2 for chat, all-minilm for embeddings).
     /// </summary>
     MafOllama
 }
@@ -79,7 +79,7 @@ public static class WorkingModeProvider
         WorkingMode.MafFoundry => "Microsoft Agent Framework using Agents deployed and hosted in Microsoft Foundry. Production-ready with cloud-managed agents.",
         WorkingMode.MafAIFoundry => "Microsoft Agent Framework using Agents deployed and hosted in Microsoft AI Foundry. Production-ready with cloud-managed agents.",
         WorkingMode.MafLocal => "Microsoft Agent Framework using locally created agents with gpt-5-mini model. Agents are created with instructions and tools configured locally.",
-        WorkingMode.MafOllama => "Microsoft Agent Framework using locally hosted Ollama models (ministral-3 for chat, all-minilm for embeddings).",
+        WorkingMode.MafOllama => "Microsoft Agent Framework using locally hosted Ollama models (llama3.2 for chat, all-minilm for embeddings).",
         _ => throw new ArgumentOutOfRangeException(nameof(mode))
     };
 

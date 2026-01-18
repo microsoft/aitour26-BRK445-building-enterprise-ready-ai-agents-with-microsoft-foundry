@@ -78,7 +78,7 @@ public static class MAFOllamaAgentExtensions
         var ollamaEndpoint = builder.Configuration["Ollama__Endpoint"] 
             ?? builder.Configuration.GetConnectionString("ollamaEndpoint")
             ?? "http://localhost:11434";
-        var chatModel = builder.Configuration["Ollama__ChatModel"] ?? "ministral-3";
+        var chatModel = builder.Configuration["Ollama__ChatModel"] ?? "llama3.2";
 
         logger?.LogInformation("Registering MAF Ollama agents using endpoint: {Endpoint}, model: {Model}", 
             ollamaEndpoint, chatModel);

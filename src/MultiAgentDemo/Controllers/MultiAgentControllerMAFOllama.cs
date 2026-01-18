@@ -308,16 +308,16 @@ public class MultiAgentControllerMAFOllama : ControllerBase
     private static string GetOrchestrationDescription(OrchestrationType orchestration) => orchestration switch
     {
         OrchestrationType.Sequential =>
-            "Sequential workflow using MAF Ollama Agents (ministral-3). Each agent step executes in order, with output feeding into subsequent steps.",
+            "Sequential workflow using MAF Ollama Agents (llama3.2). Each agent step executes in order, with output feeding into subsequent steps.",
         OrchestrationType.Concurrent =>
-            "Concurrent workflow using MAF Ollama Agents (ministral-3). All agents execute in parallel for independent analysis.",
+            "Concurrent workflow using MAF Ollama Agents (llama3.2). All agents execute in parallel for independent analysis.",
         OrchestrationType.Handoff =>
-            "Handoff workflow using MAF Ollama Agents (ministral-3). Agents dynamically pass control based on context and branching logic.",
+            "Handoff workflow using MAF Ollama Agents (llama3.2). Agents dynamically pass control based on context and branching logic.",
         OrchestrationType.GroupChat =>
-            "Group chat workflow using MAF Ollama Agents (ministral-3). Agents collaborate in a round-robin conversation pattern.",
+            "Group chat workflow using MAF Ollama Agents (llama3.2). Agents collaborate in a round-robin conversation pattern.",
         OrchestrationType.Magentic =>
             "MagenticOne-inspired workflow for complex multi-agent collaboration.",
         _ =>
-            "Multi-agent workflow using MAF Ollama Agents (ministral-3)."
+            "Multi-agent workflow using MAF Ollama Agents (llama3.2)."
     };
 }

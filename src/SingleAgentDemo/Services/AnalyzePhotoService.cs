@@ -43,6 +43,7 @@ public class AnalyzePhotoService
                 AgentMetadata.FrameworkIdentifiers.Llm => "/api/PhotoAnalysis/analyzellm",
                 AgentMetadata.FrameworkIdentifiers.DirectCall => "/api/PhotoAnalysis/analyzedirectcall",
                 AgentMetadata.FrameworkIdentifiers.MafFoundry => $"/api/PhotoAnalysis/analyze{AgentMetadata.FrameworkIdentifiers.MafFoundry}",
+                AgentMetadata.FrameworkIdentifiers.MafOllama => $"/api/PhotoAnalysis/analyze{AgentMetadata.FrameworkIdentifiers.MafOllama}",
                 _ => $"/api/PhotoAnalysis/analyze{AgentMetadata.FrameworkIdentifiers.MafLocal}"  // Default to MAF_Local
             };
             _logger.LogInformation($"[AnalyzePhotoService] Calling endpoint: {endpoint} (framework: {_framework})");
