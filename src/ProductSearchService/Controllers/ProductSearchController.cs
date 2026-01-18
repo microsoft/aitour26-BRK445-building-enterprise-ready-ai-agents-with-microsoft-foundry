@@ -21,7 +21,7 @@ public class ProductSearchController : ControllerBase
         _agentFxAgent = localAgentProvider.GetAgentByName(AgentMetadata.GetAgentName(AgentType.ProductSearchAgent));
     }
 
-    [HttpPost("search/llm")]
+    [HttpPost("analyze_search/llm")]
     public async Task<ActionResult<ToolRecommendation[]>> SearchInventoryLlmAsync([FromBody] InventorySearchRequest request, CancellationToken cancellationToken)
     {
         _logger.LogInformation($"{AgentMetadata.LogPrefixes.Llm} Searching inventory for query: {{SearchQuery}}", request.SearchQuery);
@@ -34,7 +34,7 @@ public class ProductSearchController : ControllerBase
             cancellationToken);
     }
 
-    [HttpPost("search/maf")]  // Using constant AgentMetadata.FrameworkIdentifiers.Maf
+    [HttpPost("analyze_search/maf")]  // Using constant AgentMetadata.FrameworkIdentifiers.Maf
     public async Task<ActionResult<ToolRecommendation[]>> SearchInventoryMAFAsync([FromBody] InventorySearchRequest request, CancellationToken cancellationToken)
     {
         _logger.LogInformation($"{AgentMetadata.LogPrefixes.Maf} Searching inventory for query: {{SearchQuery}}", request.SearchQuery);
@@ -46,7 +46,19 @@ public class ProductSearchController : ControllerBase
             cancellationToken);
     }
 
-    [HttpPost("search/directcall")]
+    [HttpPost("analyze_search/maf_ollama")]  // Using constant AgentMetadata.FrameworkIdentifiers.MafOllama
+    public async Task<ActionResult<ToolRecommendation[]>> SearchInventoryMAFOllamaAsync([FromBody] InventorySearchRequest request, CancellationToken cancellationToken)
+    {
+        _logger.LogInformation($"{AgentMetadata.LogPrefixes.MafOllama} Searching inventory for query: {{SearchQuery}}", request.SearchQuery);
+
+        return await SearchProductsAsync(
+            request,
+            InvokeAgentFrameworkAsync,
+            AgentMetadata.LogPrefixes.MafOllama,
+            cancellationToken);
+    }
+
+    [HttpPost("analyze_search/direct_call")]
     public ActionResult<ToolRecommendation[]> SearchInventoryDirectCallAsync([FromBody] InventorySearchRequest request)
     {
         _logger.LogInformation("[DirectCall] Searching inventory for query: {SearchQuery}", request.SearchQuery);

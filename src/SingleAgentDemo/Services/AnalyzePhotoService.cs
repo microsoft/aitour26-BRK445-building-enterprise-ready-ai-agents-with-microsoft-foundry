@@ -40,11 +40,11 @@ public class AnalyzePhotoService
             // Map framework to actual controller endpoints
             var endpoint = _framework switch
             {
-                AgentMetadata.FrameworkIdentifiers.Llm => "/api/PhotoAnalysis/analyzellm",
-                AgentMetadata.FrameworkIdentifiers.DirectCall => "/api/PhotoAnalysis/analyzedirectcall",
-                AgentMetadata.FrameworkIdentifiers.MafFoundry => $"/api/PhotoAnalysis/analyze{AgentMetadata.FrameworkIdentifiers.MafFoundry}",
-                AgentMetadata.FrameworkIdentifiers.MafOllama => $"/api/PhotoAnalysis/analyze{AgentMetadata.FrameworkIdentifiers.MafOllama}",
-                _ => $"/api/PhotoAnalysis/analyze{AgentMetadata.FrameworkIdentifiers.MafLocal}"  // Default to MAF_Local
+                AgentMetadata.FrameworkIdentifiers.Llm => "/api/PhotoAnalysis/analyze_llm",
+                AgentMetadata.FrameworkIdentifiers.DirectCall => "/api/PhotoAnalysis/analyze_direct_call",
+                AgentMetadata.FrameworkIdentifiers.MafFoundry => $"/api/PhotoAnalysis/analyze_{AgentMetadata.FrameworkIdentifiers.MafFoundry}",
+                AgentMetadata.FrameworkIdentifiers.MafOllama => $"/api/PhotoAnalysis/analyze_{AgentMetadata.FrameworkIdentifiers.MafOllama}",
+                _ => $"/api/PhotoAnalysis/analyze_{AgentMetadata.FrameworkIdentifiers.MafLocal}"  // Default to MAF_Local
             };
             _logger.LogInformation($"[AnalyzePhotoService] Calling endpoint: {endpoint} (framework: {_framework})");
             var response = await _httpClient.PostAsync(endpoint, content);

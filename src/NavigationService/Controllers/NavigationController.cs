@@ -22,7 +22,7 @@ public class NavigationController : ControllerBase
         _agentFxAgent = localAgentProvider.GetAgentByName(AgentMetadata.GetAgentName(AgentType.NavigationAgent));
     }
 
-    [HttpPost("directions/llm")]
+    [HttpPost("analyze_directions/llm")]
     public async Task<ActionResult<NavigationInstructions>> GenerateDirectionsLlmAsync([FromBody] DirectionsRequest request, CancellationToken cancellationToken)
     {
         _logger.LogInformation($"{AgentMetadata.LogPrefixes.Llm} Generating directions from {{From}} to {{To}}", FormatLocation(request.From), FormatLocation(request.To));
@@ -35,7 +35,7 @@ public class NavigationController : ControllerBase
             cancellationToken);
     }
 
-    [HttpPost("directions/maf")]  // Using constant AgentMetadata.FrameworkIdentifiers.Maf
+    [HttpPost("analyze_directions/maf")]  // Using constant AgentMetadata.FrameworkIdentifiers.Maf
     public async Task<ActionResult<NavigationInstructions>> GenerateDirectionsMAFAsync([FromBody] DirectionsRequest request, CancellationToken cancellationToken)
     {
         _logger.LogInformation($"{AgentMetadata.LogPrefixes.Maf} Generating directions from {{From}} to {{To}}", FormatLocation(request.From), FormatLocation(request.To));
@@ -47,7 +47,19 @@ public class NavigationController : ControllerBase
             cancellationToken);
     }
 
-    [HttpPost("directions/directcall")]
+    [HttpPost("analyze_directions/maf_ollama")]  // Using constant AgentMetadata.FrameworkIdentifiers.MafOllama
+    public async Task<ActionResult<NavigationInstructions>> GenerateDirectionsMAFOllamaAsync([FromBody] DirectionsRequest request, CancellationToken cancellationToken)
+    {
+        _logger.LogInformation($"{AgentMetadata.LogPrefixes.MafOllama} Generating directions from {{From}} to {{To}}", FormatLocation(request.From), FormatLocation(request.To));
+
+        return await GenerateDirectionsAsync(
+            request,
+            InvokeAgentFrameworkAsync,
+            AgentMetadata.LogPrefixes.MafOllama,
+            cancellationToken);
+    }
+
+    [HttpPost("analyze_directions/direct_call")]
     public ActionResult<NavigationInstructions> GenerateDirectionsDirectCallAsync([FromBody] DirectionsRequest request)
     {
         if (request is null)

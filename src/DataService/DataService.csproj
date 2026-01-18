@@ -39,6 +39,7 @@
   <ItemGroup>
     <ProjectReference Include="..\ZavaDatabaseInitialization\ZavaDatabaseInitialization.csproj" />
     <ProjectReference Include="..\ZavaMAFFoundry\ZavaMAFFoundry.csproj" />
+    <ProjectReference Include="..\ZavaMAFOllama\ZavaMAFOllama.csproj" />
     <ProjectReference Include="..\ZavaServiceDefaults\ZavaServiceDefaults.csproj" />
     <ProjectReference Include="..\SearchEntities\SearchEntities.csproj" />
     <ProjectReference Include="..\VectorEntities\VectorEntities.csproj" />

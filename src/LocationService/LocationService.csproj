@@ -17,6 +17,7 @@
 		<ProjectReference Include="..\ZavaAgentsMetadata\ZavaAgentsMetadata.csproj" />
 		<ProjectReference Include="..\ZavaMAFFoundry\ZavaMAFFoundry.csproj" />
 		<ProjectReference Include="..\ZavaMAFLocal\ZavaMAFLocal.csproj" />
+		<ProjectReference Include="..\ZavaMAFOllama\ZavaMAFOllama.csproj" />
 		<ProjectReference Include="..\ZavaServiceDefaults\ZavaServiceDefaults.csproj" />
 		<ProjectReference Include="..\DataServiceClient\DataServiceClient.csproj" />
 	</ItemGroup>

@@ -24,7 +24,7 @@ public class MatchmakingController : ControllerBase
         _agentFxAgent = localAgentProvider.GetAgentByName(AgentMetadata.GetAgentName(AgentType.ProductMatchmakingAgent));
     }
 
-    [HttpPost("alternatives/llm")]
+    [HttpPost("analyze_alternatives/llm")]
     public async Task<ActionResult<MatchmakingResult>> FindAlternativesLlmAsync([FromBody] AlternativesRequest request, CancellationToken cancellationToken)
     {
         _logger.LogInformation($"{AgentMetadata.LogPrefixes.Llm} Finding alternatives for product: {{ProductQuery}}, User: {{UserId}}", request.ProductQuery, request.UserId);
@@ -37,7 +37,7 @@ public class MatchmakingController : ControllerBase
             cancellationToken);
     }
 
-    [HttpPost("alternatives/maf")]  // Using constant AgentMetadata.FrameworkIdentifiers.Maf
+    [HttpPost("analyze_alternatives/maf")]  // Using constant AgentMetadata.FrameworkIdentifiers.Maf
     public async Task<ActionResult<MatchmakingResult>> FindAlternativesMAFAsync([FromBody] AlternativesRequest request, CancellationToken cancellationToken)
     {
         _logger.LogInformation($"{AgentMetadata.LogPrefixes.Maf} Finding alternatives for product: {{ProductQuery}}, User: {{UserId}}", request.ProductQuery, request.UserId);
@@ -49,7 +49,19 @@ public class MatchmakingController : ControllerBase
             cancellationToken);
     }
 
-    [HttpPost("alternatives/directcall")]
+    [HttpPost("analyze_alternatives/maf_ollama")]  // Using constant AgentMetadata.FrameworkIdentifiers.MafOllama
+    public async Task<ActionResult<MatchmakingResult>> FindAlternativesMAFOllamaAsync([FromBody] AlternativesRequest request, CancellationToken cancellationToken)
+    {
+        _logger.LogInformation($"{AgentMetadata.LogPrefixes.MafOllama} Finding alternatives for product: {{ProductQuery}}, User: {{UserId}}", request.ProductQuery, request.UserId);
+
+        return await FindAlternativesAsync(
+            request,
+            InvokeAgentFrameworkAsync,
+            AgentMetadata.LogPrefixes.MafOllama,
+            cancellationToken);
+    }
+
+    [HttpPost("analyze_alternatives/direct_call")]
     public ActionResult<MatchmakingResult> FindAlternativesDirectCallAsync([FromBody] AlternativesRequest request)
     {
         _logger.LogInformation("[DirectCall] Finding alternatives for product: {ProductQuery}, User: {UserId}", request.ProductQuery, request.UserId);

@@ -29,7 +29,7 @@ public class ToolReasoningService
     {
         try
         {
-            var endpoint = $"/api/Reasoning/generate/{_framework}";
+            var endpoint = $"/api/Reasoning/analyze_generate/{_framework}";
             _logger.LogInformation($"[ToolReasoningService] Calling endpoint: {endpoint}");
             var response = await _httpClient.PostAsJsonAsync(endpoint, request);
             

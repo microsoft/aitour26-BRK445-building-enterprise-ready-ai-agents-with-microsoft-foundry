@@ -36,7 +36,7 @@ public class ProductSearchService
 
             var searchRequest = new InventorySearchRequest { SearchQuery = searchQuery };
             
-            var endpoint = $"/api/search/{_framework}";
+            var endpoint = $"/api/analyze_search/{_framework}";
             _logger.LogInformation($"[ProductSearchService] Calling endpoint: {endpoint}");
             var response = await _httpClient.PostAsJsonAsync(endpoint, searchRequest);
             

@@ -1,6 +1,7 @@
 using ZavaMAFFoundry;
 using ZavaMAFLocal;
 using DataServiceClient;
+using ZavaMAFOllama;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +20,9 @@ builder.AddMAFFoundryAgents();
 
 // Register MAF Local agents (locally defined agents)
 builder.AddMAFLocalAgents();
+
+// register MAF Ollama agents (Ollama-based agents)
+builder.AddMAFOllamaAgents();
 
 var app = builder.Build();
 

@@ -25,7 +25,7 @@ public class LocationController : ControllerBase
         _agentFxAgent = localAgentProvider.GetAgentByName(AgentMetadata.GetAgentName(AgentType.LocationServiceAgent));
     }
 
-    [HttpGet("find/llm")]
+    [HttpGet("analyze_find/llm")]
     public async Task<ActionResult<LocationResult>> FindProductLocationLlmAsync([FromQuery] string product, CancellationToken cancellationToken)
     {
         _logger.LogInformation($"{AgentMetadata.LogPrefixes.Llm} Finding location for product: {{Product}}", product);
@@ -38,7 +38,7 @@ public class LocationController : ControllerBase
             cancellationToken);
     }
 
-    [HttpGet("find/maf")]  // Using constant AgentMetadata.FrameworkIdentifiers.Maf
+    [HttpGet("analyze_find/maf")]  // Using constant AgentMetadata.FrameworkIdentifiers.Maf
     public async Task<ActionResult<LocationResult>> FindProductLocationMAFAsync([FromQuery] string product, CancellationToken cancellationToken)
     {
         _logger.LogInformation($"{AgentMetadata.LogPrefixes.Maf} Finding location for product: {{Product}}", product);
@@ -47,6 +47,18 @@ public class LocationController : ControllerBase
             product,
             InvokeAgentFrameworkAsync,
             AgentMetadata.LogPrefixes.Maf,
+            cancellationToken);
+    }
+
+    [HttpGet("analyze_find/maf_ollama")]  // Using constant AgentMetadata.FrameworkIdentifiers.MafOllama
+    public async Task<ActionResult<LocationResult>> FindProductLocationMAFOllamaAsync([FromQuery] string product, CancellationToken cancellationToken)
+    {
+        _logger.LogInformation($"{AgentMetadata.LogPrefixes.MafOllama} Finding location for product: {{Product}}", product);
+
+        return await FindProductLocationAsync(
+            product,
+            InvokeAgentFrameworkAsync,
+            AgentMetadata.LogPrefixes.MafOllama,
             cancellationToken);
     }
 
