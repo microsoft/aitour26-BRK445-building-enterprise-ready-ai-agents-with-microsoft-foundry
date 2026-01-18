@@ -23,7 +23,7 @@ public class MAFOllamaAgentProvider
     /// Initializes a new instance of the MAFOllamaAgentProvider.
     /// </summary>
     /// <param name="serviceProvider">The service provider.</param>
-    /// <param name="chatClient">The chat client to use for creating agents.</param>
+    /// <param name="chatClient">The chat client to use for agent creation (used by agent factories).</param>
     public MAFOllamaAgentProvider(
         IServiceProvider serviceProvider,
         IChatClient chatClient)
