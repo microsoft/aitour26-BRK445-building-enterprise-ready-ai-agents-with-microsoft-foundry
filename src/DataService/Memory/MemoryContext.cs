@@ -107,7 +107,7 @@ public class MemoryContext
 
             await foreach (var resultItem in _productsCollection.SearchAsync(vectorSearchQuery, top: 3))
             {
-                if (resultItem.Score > 0.5)
+                if (resultItem.Score > 0.4)
                 {
                     var product = await db.FindAsync<Product>(resultItem.Record.Id);
                     if (product != null)
@@ -127,6 +127,11 @@ public class MemoryContext
 Generate a catchy and friendly message using the information below.
 Add a comparison between the products found and the search criteria.
 Include products details.
+Format your response in clear, well-structured markdown with:
+- Use headers (##) for sections
+- Use bullet points for product lists
+- Use **bold** for important information
+- Use > for important notes
     - User Question: {search}
     - Found Products: 
 {sbFoundProducts}";

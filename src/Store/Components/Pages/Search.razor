@@ -10,80 +10,689 @@
 
 <PageTitle>Search Products</PageTitle>
 
-<h1>Search Products</h1>
-
-<p>Search our amazing outdoor products that you can purchase.</p>
-
-<div class="form-group">
-	<label for="search" class="form-label">Type your question:</label>
-	<div class="input-group mb-3">
-		<input type="text" id="search" class="form-control" @bind="searchTerm" placeholder="Enter search term..." />
-		<button id="btnSearch" class="btn btn-primary" @onclick="DoSearch" type="submit">Search</button>
+<div class="search-container">
+	<div class="search-header">
+		<h1>🔍 Search Products</h1>
+		<p class="search-subtitle">Discover amazing outdoor products with intelligent search</p>
 	</div>
-	<div class="form-check form-switch mb-3">
-		<InputCheckbox id="smartSearch2" @bind-Value="smartSearch" />
-		<label class="form-check-label" for="smartSearch">Use Semantic Search</label>
+
+	<div class="search-section">
+		<div class="search-input-wrapper">
+			<label for="search" class="search-label">What are you looking for?</label>
+			<div class="search-controls">
+				<input type="text" id="search" class="search-input" @bind="searchTerm" placeholder="Type your question or search term..." disabled="@isSearching" />
+				<button id="btnSearch" class="btn-search-primary" @onclick="DoSearch" type="submit" disabled="@isSearching">
+					@if (isSearching)
+					{
+						<span class="spinner-icon"></span>
+						<span>Searching...</span>
+					}
+					else
+					{
+						<span>Search</span>
+					}
+				</button>
+			</div>
+		</div>
+
+		<div class="quick-actions">
+			<button class="btn-quick-question" @onclick="UseDefaultQuestion" type="button" disabled="@isSearching">
+				💡 Use Example: "I want to paint my room white"
+			</button>
+		</div>
+
+		<div class="search-options">
+			<label class="search-toggle">
+				<InputCheckbox @bind-Value="smartSearch" />
+				<span class="toggle-label">✨ Use AI-Powered Semantic Search</span>
+			</label>
+		</div>
+
+		@if (!string.IsNullOrEmpty(aiResponse) && smartSearch)
+		{
+			<div class="ai-response-box">
+				<div class="ai-response-label">💬 AI Assistant Response:</div>
+				<div class="ai-response-content">@((MarkupString)ConvertMarkdownToHtml(aiResponse))</div>
+			</div>
+		}
 	</div>
-	<hr />
-	<p class="quote">@aiResponse</p>
+
+	@if (isSearching)
+	{
+		<div class="progress-container">
+			<div class="progress-indicator">
+				<div class="spinner"></div>
+				<p class="progress-text">Searching for products...</p>
+			</div>
+		</div>
+	}
+	else if (products == null)
+	{
+		<div class="loading-state">
+			<p><em>Searching for products...</em></p>
+		</div>
+	}
+	else if (products.Count == 0)
+	{
+		<div class="no-results">
+			<p>No products found. Try a different search term!</p>
+		</div>
+	}
+	else
+	{
+		<div class="products-section">
+			<h2>Found @products.Count Product@(products.Count != 1 ? "s" : "")</h2>
+			<div class="products-grid">
+				@foreach (var product in products)
+				{
+					<div class="product-card">
+						@{
+							var productsBase = Configuration["ProductsBaseUrl"] ?? "";
+							var imgSrc = string.IsNullOrEmpty(productsBase)
+							? $"/images/{product.ImageUrl}"
+							: $"{productsBase.TrimEnd('/')}/images/{product.ImageUrl}";
+						}
+						<div class="product-image">
+							<img src="@imgSrc" alt="@product.Name" />
+						</div>
+						<div class="product-info">
+							<h3 class="product-name">@product.Name</h3>
+							<p class="product-description">@product.Description</p>
+							<div class="product-price">@product.Price</div>
+						</div>
+					</div>
+				}
+			</div>
+		</div>
+	}
 </div>
 
+<style>
+	:root {
+		--primary-color: #0066cc;
+		--primary-dark: #0052a3;
+		--accent-color: #00a4ef;
+		--success-color: #107c10;
+		--light-bg: #f5f5f5;
+		--card-bg: #ffffff;
+		--text-primary: #333333;
+		--text-secondary: #666666;
+		--border-color: #e0e0e0;
+		--shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+		--shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
+		--radius: 8px;
+	}
 
-@if (products == null)
-{
-	<p><em>Loading...</em></p>
-}
-else
-{
-	<table class="table">
-		<thead>
-			<tr>
-				<th>Image</th>
-				<th>Name</th>
-				<th>Description</th>
-				<th>Price</th>
-			</tr>
-		</thead>
-		<tbody>
-			@foreach (var product in products)
-			{
-				<tr>
-					<!-- Use local Products images or configured ProductsBaseUrl -->
-					@{
-						var productsBase = Configuration["ProductsBaseUrl"] ?? "";
-						var imgSrc = string.IsNullOrEmpty(productsBase)
-						? $"/images/{product.ImageUrl}"
-						: $"{productsBase.TrimEnd('/')}/images/{product.ImageUrl}";
-					}
-					<td><img height="80" width="80" src="@imgSrc" alt="@product.Name" /></td>
-					<td>@product.Name</td>
-					<td>@product.Description</td>
-					<td>@product.Price</td>
-				</tr>
-			}
-		</tbody>
-	</table>
-}
+	.search-container {
+		max-width: 1200px;
+		margin: 0 auto;
+		padding: 40px 20px;
+		background: linear-gradient(135deg, #f5f7fa 0%, #e9f0f8 100%);
+		min-height: 100vh;
+	}
+
+	.search-header {
+		text-align: center;
+		margin-bottom: 40px;
+		animation: fadeInDown 0.6s ease-out;
+	}
+
+	.search-header h1 {
+		font-size: 2.5em;
+		color: var(--text-primary);
+		margin: 0 0 10px 0;
+		font-weight: 700;
+		letter-spacing: -0.5px;
+	}
+
+	.search-subtitle {
+		font-size: 1.1em;
+		color: var(--text-secondary);
+		margin: 0;
+		font-weight: 400;
+	}
+
+	.search-section {
+		background: var(--card-bg);
+		border-radius: var(--radius);
+		padding: 30px;
+		box-shadow: var(--shadow-md);
+		margin-bottom: 40px;
+		animation: fadeInUp 0.6s ease-out;
+	}
+
+	.search-input-wrapper {
+		margin-bottom: 24px;
+	}
+
+	.search-label {
+		display: block;
+		font-size: 1em;
+		font-weight: 600;
+		color: var(--text-primary);
+		margin-bottom: 12px;
+	}
+
+	.search-controls {
+		display: flex;
+		gap: 12px;
+		flex-wrap: wrap;
+	}
+
+	.search-input {
+		flex: 1;
+		min-width: 250px;
+		padding: 12px 16px;
+		font-size: 1em;
+		border: 2px solid var(--border-color);
+		border-radius: var(--radius);
+		font-family: inherit;
+		transition: all 0.3s ease;
+	}
+
+	.search-input:focus {
+		outline: none;
+		border-color: var(--primary-color);
+		box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+	}
+
+	.search-input:disabled {
+		background-color: var(--light-bg);
+		cursor: not-allowed;
+		opacity: 0.7;
+	}
+
+	.btn-search-primary {
+		padding: 12px 32px;
+		background-color: var(--primary-color);
+		color: white;
+		border: none;
+		border-radius: var(--radius);
+		font-size: 1em;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.3s ease;
+		box-shadow: var(--shadow-sm);
+	}
+
+	.btn-search-primary:hover {
+		background-color: var(--primary-dark);
+		transform: translateY(-2px);
+		box-shadow: var(--shadow-md);
+	}
+
+	.btn-search-primary:active {
+		transform: translateY(0);
+	}
+
+	.btn-search-primary:disabled {
+		background-color: #999999;
+		cursor: not-allowed;
+		opacity: 0.8;
+		transform: none;
+	}
+
+	.btn-search-primary:disabled:hover {
+		background-color: #999999;
+		transform: none;
+		box-shadow: var(--shadow-sm);
+	}
+
+	.quick-actions {
+		margin-bottom: 20px;
+	}
+
+	.btn-quick-question {
+		display: inline-block;
+		padding: 10px 20px;
+		background-color: transparent;
+		color: var(--accent-color);
+		border: 2px solid var(--accent-color);
+		border-radius: var(--radius);
+		font-size: 0.95em;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.3s ease;
+	}
+
+	.btn-quick-question:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+		border-color: #999999;
+		color: #999999;
+	}
+
+	.btn-quick-question:disabled:hover {
+		background-color: transparent;
+		color: #999999;
+		transform: none;
+		box-shadow: none;
+	}
+
+	.search-options {
+		margin-bottom: 20px;
+	}
+
+	.search-toggle {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		cursor: pointer;
+		font-weight: 500;
+		color: var(--text-primary);
+		transition: color 0.3s ease;
+	}
+
+	.search-toggle:hover {
+		color: var(--primary-color);
+	}
+
+	.toggle-label {
+		user-select: none;
+	}
+
+	.ai-response-box {
+		background-color: var(--light-bg);
+		border-left: 4px solid var(--success-color);
+		padding: 16px;
+		border-radius: var(--radius);
+		margin-top: 20px;
+		animation: slideInLeft 0.4s ease-out;
+	}
+
+	.ai-response-label {
+		font-weight: 700;
+		color: var(--text-primary);
+		margin-bottom: 8px;
+		font-size: 0.95em;
+	}
+
+	.ai-response-text {
+		color: var(--text-secondary);
+		margin: 0;
+		line-height: 1.6;
+	}
+
+	.ai-response-content {
+		color: var(--text-secondary);
+		margin: 0;
+		line-height: 1.6;
+	}
+
+	.ai-response-content h1,
+	.ai-response-content h2,
+	.ai-response-content h3,
+	.ai-response-content h4,
+	.ai-response-content h5,
+	.ai-response-content h6 {
+		color: var(--text-primary);
+		margin: 16px 0 8px 0;
+		font-weight: 700;
+	}
+
+	.ai-response-content h2 {
+		font-size: 1.3em;
+		border-bottom: 2px solid var(--border-color);
+		padding-bottom: 8px;
+	}
+
+	.ai-response-content h3 {
+		font-size: 1.1em;
+	}
+
+	.ai-response-content p {
+		margin: 8px 0;
+	}
+
+	.ai-response-content ul,
+	.ai-response-content ol {
+		margin: 12px 0;
+		padding-left: 24px;
+	}
+
+	.ai-response-content li {
+		margin: 4px 0;
+	}
+
+	.ai-response-content blockquote {
+		border-left: 4px solid var(--primary-color);
+		margin: 12px 0;
+		padding: 12px 16px;
+		background-color: rgba(0, 102, 204, 0.05);
+		font-style: italic;
+	}
+
+	.ai-response-content strong {
+		color: var(--primary-color);
+		font-weight: 700;
+	}
+
+	.ai-response-content code {
+		background-color: var(--light-bg);
+		padding: 2px 6px;
+		border-radius: 3px;
+		font-family: 'Courier New', monospace;
+		font-size: 0.9em;
+	}
+
+	.ai-response-content pre {
+		background-color: var(--light-bg);
+		padding: 12px;
+		border-radius: var(--radius);
+		overflow-x: auto;
+		margin: 12px 0;
+	}
+
+	.ai-response-content pre code {
+		background: none;
+		padding: 0;
+	}
+
+	.loading-state {
+		text-align: center;
+		padding: 60px 20px;
+		color: var(--text-secondary);
+		font-size: 1.1em;
+	}
+
+	.no-results {
+		text-align: center;
+		padding: 60px 20px;
+		background: var(--card-bg);
+		border-radius: var(--radius);
+		box-shadow: var(--shadow-sm);
+		color: var(--text-secondary);
+		font-size: 1.1em;
+	}
+
+	.products-section {
+		animation: fadeIn 0.6s ease-out;
+	}
+
+	.products-section h2 {
+		color: var(--text-primary);
+		margin-bottom: 24px;
+		font-size: 1.5em;
+		font-weight: 600;
+	}
+
+	.products-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+		gap: 24px;
+	}
+
+	.product-card {
+		background: var(--card-bg);
+		border-radius: var(--radius);
+		overflow: hidden;
+		box-shadow: var(--shadow-sm);
+		transition: all 0.3s ease;
+		display: flex;
+		flex-direction: column;
+		height: 100%;
+	}
+
+	.product-card:hover {
+		transform: translateY(-8px);
+		box-shadow: var(--shadow-md);
+	}
+
+	.product-image {
+		width: 100%;
+		height: 200px;
+		background-color: var(--light-bg);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		overflow: hidden;
+	}
+
+	.product-image img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		transition: transform 0.3s ease;
+	}
+
+	.product-card:hover .product-image img {
+		transform: scale(1.05);
+	}
+
+	.product-info {
+		padding: 16px;
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.product-name {
+		font-size: 1.1em;
+		font-weight: 700;
+		color: var(--text-primary);
+		margin: 0 0 8px 0;
+	}
+
+	.product-description {
+		font-size: 0.9em;
+		color: var(--text-secondary);
+		margin: 0 0 12px 0;
+		flex: 1;
+		line-height: 1.5;
+	}
+
+	.product-price {
+		font-size: 1.3em;
+		font-weight: 700;
+		color: var(--primary-color);
+		margin-top: auto;
+	}
+
+	.spinner-icon {
+		display: inline-block;
+		width: 16px;
+		height: 16px;
+		border: 2px solid rgba(255, 255, 255, 0.3);
+		border-radius: 50%;
+		border-top-color: white;
+		animation: spin 0.8s linear infinite;
+		margin-right: 8px;
+	}
+
+	.progress-container {
+		max-width: 1200px;
+		margin: 0 auto;
+		padding: 20px;
+		animation: fadeIn 0.3s ease-out;
+	}
+
+	.progress-indicator {
+		background: var(--card-bg);
+		border-radius: var(--radius);
+		padding: 40px;
+		text-align: center;
+		box-shadow: var(--shadow-md);
+	}
+
+	.spinner {
+		width: 50px;
+		height: 50px;
+		border: 4px solid var(--light-bg);
+		border-top-color: var(--primary-color);
+		border-radius: 50%;
+		margin: 0 auto 16px;
+		animation: spin 1s linear infinite;
+	}
+
+	.progress-text {
+		color: var(--text-secondary);
+		font-size: 1.1em;
+		margin: 0;
+		font-weight: 500;
+	}
+
+	/* Animations */
+	@@keyframes fadeInDown {
+		from {
+			opacity: 0;
+			transform: translateY(-20px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	@@keyframes fadeInUp {
+		from {
+			opacity: 0;
+			transform: translateY(20px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	@@keyframes slideInLeft {
+		from {
+			opacity: 0;
+			transform: translateX(-20px);
+		}
+		to {
+			opacity: 1;
+			transform: translateX(0);
+		}
+	}
+
+	@@keyframes fadeIn {
+		from {
+			opacity: 0;
+		}
+		to {
+			opacity: 1;
+		}
+	}
+
+	@@keyframes spin {
+		from {
+			transform: rotate(0deg);
+		}
+		to {
+			transform: rotate(360deg);
+		}
+	}
+
+	/* Responsive Design */
+	@@media (max-width: 768px) {
+		.search-container {
+			padding: 20px 16px;
+		}
+
+		.search-header h1 {
+			font-size: 1.8em;
+		}
+
+		.search-section {
+			padding: 20px;
+		}
+
+		.search-controls {
+			flex-direction: column;
+		}
+
+		.search-input {
+			min-width: auto;
+		}
+
+		.btn-search-primary {
+			width: 100%;
+		}
+
+		.products-grid {
+			grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+			gap: 16px;
+		}
+	}
+</style>
 
 @code {
 	private string searchTerm = "";
 	private List<SharedEntities.Product>? products;
 	private string aiResponse = "";
 	private bool smartSearch = false;
+	private bool isSearching = false;
 
 	private async Task DoSearch(MouseEventArgs e)
 	{
-		SearchResponse response = null;
-		if (!smartSearch)
-		{
-			response = await DataServiceClient.SearchProductsAsync(searchTerm);
-		}
-		else
-		{
-			response = await DataServiceClient.AISearchProductsAsync(searchTerm);
-		}
-		aiResponse = response.Response;
+		if (string.IsNullOrWhiteSpace(searchTerm))
+			return;
 
-		products = response.Products;
+		isSearching = true;
+		try
+		{
+			SearchResponse response = null;
+			if (!smartSearch)
+			{
+				response = await DataServiceClient.SearchProductsAsync(searchTerm);
+			}
+			else
+			{
+				response = await DataServiceClient.AISearchProductsAsync(searchTerm);
+			}
+			aiResponse = response.Response;
+			products = response.Products;
+		}
+		finally
+		{
+			isSearching = false;
+		}
+	}
+
+	private async Task UseDefaultQuestion(MouseEventArgs e)
+	{
+		searchTerm = "I want to paint my room white";
+	}
+
+	private string ConvertMarkdownToHtml(string markdown)
+	{
+		if (string.IsNullOrWhiteSpace(markdown))
+			return "";
+
+		var html = markdown
+			.Replace("&", "&amp;")
+			.Replace("<", "&lt;")
+			.Replace(">", "&gt;");
+
+		// Convert markdown headers
+		html = System.Text.RegularExpressions.Regex.Replace(html, @"^### (.+)$", "<h3>$1</h3>", System.Text.RegularExpressions.RegexOptions.Multiline);
+		html = System.Text.RegularExpressions.Regex.Replace(html, @"^## (.+)$", "<h2>$1</h2>", System.Text.RegularExpressions.RegexOptions.Multiline);
+		html = System.Text.RegularExpressions.Regex.Replace(html, @"^# (.+)$", "<h1>$1</h1>", System.Text.RegularExpressions.RegexOptions.Multiline);
+
+		// Convert bold
+		html = System.Text.RegularExpressions.Regex.Replace(html, @"\*\*(.+?)\*\*", "<strong>$1</strong>");
+
+		// Convert italic
+		html = System.Text.RegularExpressions.Regex.Replace(html, @"\*(.+?)\*", "<em>$1</em>");
+
+		// Convert code blocks
+		html = System.Text.RegularExpressions.Regex.Replace(html, @"`(.+?)`", "<code>$1</code>");
+
+		// Convert blockquotes
+		html = System.Text.RegularExpressions.Regex.Replace(html, @"^&gt; (.+)$", "<blockquote>$1</blockquote>", System.Text.RegularExpressions.RegexOptions.Multiline);
+
+		// Convert bullet points
+		html = System.Text.RegularExpressions.Regex.Replace(html, @"^- (.+)$", "<li>$1</li>", System.Text.RegularExpressions.RegexOptions.Multiline);
+		html = System.Text.RegularExpressions.Regex.Replace(html, @"(<li>.+</li>)", "<ul>$1</ul>");
+
+		// Convert line breaks to paragraphs
+		html = html.Replace("\r\n\r\n", "</p><p>");
+		html = html.Replace("\n\n", "</p><p>");
+		html = "<p>" + html + "</p>";
+
+		// Clean up extra tags
+		html = System.Text.RegularExpressions.Regex.Replace(html, @"<p>\s*</p>", "");
+
+		return html;
 	}
 }
