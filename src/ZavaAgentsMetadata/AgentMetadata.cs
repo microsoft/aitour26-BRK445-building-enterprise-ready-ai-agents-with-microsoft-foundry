@@ -38,6 +38,11 @@ public static class AgentMetadata
         public const string MafFoundry = "maf_foundry";
 
         /// <summary>
+        /// Microsoft Agent Framework with Ollama agents.
+        /// </summary>
+        public const string MafOllama = "maf_ollama";
+
+        /// <summary>
         /// Direct LLM calls without agent framework.
         /// </summary>
         public const string Llm = "llm";
@@ -64,6 +69,11 @@ public static class AgentMetadata
         public const string MafFoundry = "[MAF_Foundry]";
 
         /// <summary>
+        /// Log prefix for MAF Ollama operations.
+        /// </summary>
+        public const string MafOllama = "[MAF_Ollama]";
+
+        /// <summary>
         /// Log prefix for LLM operations.
         /// </summary>
         public const string Llm = "[LLM]";
@@ -87,6 +97,14 @@ public static class AgentMetadata
     public static string GetLocalAgentName(AgentType agent)
     { 
         return GetAgentName(agent, local: true);
+    }
+
+    /// <summary>
+    /// Gets the Ollama agent name for a given agent type.
+    /// </summary>
+    public static string GetOllamaAgentName(AgentType agent)
+    { 
+        return GetAgentName(agent) + "Ollama";
     }
 
     /// <summary>

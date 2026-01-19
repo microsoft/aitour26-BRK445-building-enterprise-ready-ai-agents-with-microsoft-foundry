@@ -32,6 +32,7 @@
     <Project Path="ZavaMAFAIFoundry/ZavaMAFAIFoundry.csproj" Id="bb402c65-425c-4f7a-8479-bce52030f654" />
     <Project Path="ZavaMAFFoundry/ZavaMAFFoundry.csproj" Id="cedf7ed7-47e5-4733-a184-fe36eeb23aeb" />
     <Project Path="ZavaMAFLocal/ZavaMAFLocal.csproj" />
+    <Project Path="ZavaMAFOllama/ZavaMAFOllama.csproj" />
   </Folder>
   <Folder Name="/7 Support/">
     <Project Path="ZavaAgentsMetadata/ZavaAgentsMetadata.csproj" />
