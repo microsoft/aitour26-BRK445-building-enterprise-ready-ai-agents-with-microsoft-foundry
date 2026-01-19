@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using SharedEntities;
 using ZavaAgentsMetadata;
 using ZavaMAFLocal;
+using ZavaMAFOllama;
 
 namespace ProductSearchService.Controllers;
 
@@ -12,13 +13,16 @@ public class ProductSearchController : ControllerBase
 {
     private readonly ILogger<ProductSearchController> _logger;
     private readonly AIAgent _agentFxAgent;
+    private readonly AIAgent _ollamaAgent;
 
     public ProductSearchController(
         ILogger<ProductSearchController> logger,
-        MAFLocalAgentProvider localAgentProvider)
+        MAFLocalAgentProvider localAgentProvider,
+        MAFOllamaAgentProvider ollamaAgentProvider)
     {
         _logger = logger;
         _agentFxAgent = localAgentProvider.GetAgentByName(AgentMetadata.GetAgentName(AgentType.ProductSearchAgent));
+        _ollamaAgent = ollamaAgentProvider.GetAgentByName(AgentMetadata.GetAgentName(AgentType.ProductSearchAgent));
     }
 
     [HttpPost("analyze_search/llm")]
@@ -53,7 +57,7 @@ public class ProductSearchController : ControllerBase
 
         return await SearchProductsAsync(
             request,
-            InvokeAgentFrameworkAsync,
+            InvokeOllamaAgentAsync,
             AgentMetadata.LogPrefixes.MafOllama,
             cancellationToken);
     }
@@ -164,6 +168,15 @@ public class ProductSearchController : ControllerBase
 
         var thread = _agentFxAgent.GetNewThread();
         var response = await _agentFxAgent.RunAsync(prompt, thread);
+        return response?.Text ?? string.Empty;
+    }
+
+    private async Task<string> InvokeOllamaAgentAsync(string prompt, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var thread = _ollamaAgent.GetNewThread();
+        var response = await _ollamaAgent.RunAsync(prompt, thread);
         return response?.Text ?? string.Empty;
     }
 

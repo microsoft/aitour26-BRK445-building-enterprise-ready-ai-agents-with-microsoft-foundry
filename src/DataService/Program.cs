@@ -5,6 +5,7 @@ using DataService.Memory;
 using ZavaDatabaseInitialization;
 using Microsoft.EntityFrameworkCore;
 using ZavaMAFFoundry;
+using ZavaMAFOllama;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,14 +29,25 @@ builder.Services.AddSingleton<IConfiguration>(sp =>
 // Register MAF Microsoft Foundry Agents, chat client and embedding generator
 builder.AddMAFFoundryAgents();
 
+// register MAF Ollama Agents, chat client and embedding generator
+builder.AddMAFOllamaAgents();
+
 // add memory context
 builder.Services.AddSingleton(sp =>
 {
     var logger = sp.GetService<ILogger<Program>>();
     logger.LogInformation("Creating memory context");
+
+    var chatClient = sp.GetService<IChatClient>();
+    var embeddingGenerator = sp.GetService<IEmbeddingGenerator<string, Embedding<float>>>();
+    var ollamaChatClient = sp.GetRequiredKeyedService<IChatClient>("ollama");
+    var ollamaEmbeddingGenerator = sp.GetRequiredKeyedService<IEmbeddingGenerator<string, Embedding<float>>>("ollama");
+
     return new MemoryContext(logger, 
-        sp.GetService<IChatClient>(), 
-        sp.GetService<IEmbeddingGenerator<string, Embedding<float>>>());
+        chatClient, 
+        embeddingGenerator, 
+        ollamaChatClient,
+        ollamaEmbeddingGenerator);
 });
 
 // Add services to the container.
@@ -69,10 +81,10 @@ using (var scope = app.Services.CreateScope())
     }
     DbInitializer.Initialize(context);
 
-    app.Logger.LogInformation("Start fill products in vector db");
-    var memoryContext = app.Services.GetRequiredService<MemoryContext>();
-    await memoryContext.InitMemoryContextAsync(context);
-    app.Logger.LogInformation("Done fill products in vector db");
+    //app.Logger.LogInformation("Start fill products in vector db");
+    //var memoryContext = app.Services.GetRequiredService<MemoryContext>();
+    //await memoryContext.InitMemoryContextAsync(context);
+    //app.Logger.LogInformation("Done fill products in vector db");
 }
 
 app.Run();

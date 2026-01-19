@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text.Json;
 using ZavaAgentsMetadata;
 using ZavaMAFLocal;
+using ZavaMAFOllama;
 
 namespace MatchmakingService.Controllers;
 
@@ -15,13 +16,16 @@ public class MatchmakingController : ControllerBase
 {
     private readonly ILogger<MatchmakingController> _logger;
     private readonly AIAgent _agentFxAgent;
+    private readonly AIAgent _ollamaAgent;
 
     public MatchmakingController(
         ILogger<MatchmakingController> logger,
-        MAFLocalAgentProvider localAgentProvider)
+        MAFLocalAgentProvider localAgentProvider,
+        MAFOllamaAgentProvider ollamaAgentProvider)
     {
         _logger = logger;
         _agentFxAgent = localAgentProvider.GetAgentByName(AgentMetadata.GetAgentName(AgentType.ProductMatchmakingAgent));
+        _ollamaAgent = ollamaAgentProvider.GetAgentByName(AgentMetadata.GetAgentName(AgentType.ProductMatchmakingAgent));
     }
 
     [HttpPost("analyze_alternatives/llm")]
@@ -56,7 +60,7 @@ public class MatchmakingController : ControllerBase
 
         return await FindAlternativesAsync(
             request,
-            InvokeAgentFrameworkAsync,
+            InvokeOllamaAgentAsync,
             AgentMetadata.LogPrefixes.MafOllama,
             cancellationToken);
     }
@@ -108,6 +112,15 @@ public class MatchmakingController : ControllerBase
 
         var thread = _agentFxAgent.GetNewThread();
         var response = await _agentFxAgent.RunAsync(prompt, thread);
+        return response?.Text ?? string.Empty;
+    }
+
+    private async Task<string> InvokeOllamaAgentAsync(string prompt, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var thread = _ollamaAgent.GetNewThread();
+        var response = await _ollamaAgent.RunAsync(prompt, thread);
         return response?.Text ?? string.Empty;
     }
 

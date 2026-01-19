@@ -4,6 +4,7 @@ using SharedEntities;
 using System.Text.Json;
 using ZavaAgentsMetadata;
 using ZavaMAFLocal;
+using ZavaMAFOllama;
 
 namespace LocationService.Controllers;
 
@@ -13,16 +14,19 @@ public class LocationController : ControllerBase
 {
     private readonly ILogger<LocationController> _logger;
     private readonly AIAgent _agentFxAgent;
+    private readonly AIAgent _ollamaAgent;
     private readonly DataServiceClient.DataServiceClient _dataServiceClient;
 
     public LocationController(
         ILogger<LocationController> logger,        
         DataServiceClient.DataServiceClient dataServiceClient,
-        MAFLocalAgentProvider localAgentProvider)
+        MAFLocalAgentProvider localAgentProvider,
+        MAFOllamaAgentProvider ollamaAgentProvider)
     {
         _logger = logger;
         _dataServiceClient = dataServiceClient;
         _agentFxAgent = localAgentProvider.GetAgentByName(AgentMetadata.GetAgentName(AgentType.LocationServiceAgent));
+        _ollamaAgent = ollamaAgentProvider.GetAgentByName(AgentMetadata.GetAgentName(AgentType.LocationServiceAgent));
     }
 
     [HttpGet("analyze_find/llm")]
@@ -57,7 +61,7 @@ public class LocationController : ControllerBase
 
         return await FindProductLocationAsync(
             product,
-            InvokeAgentFrameworkAsync,
+            InvokeOllamaAgentAsync,
             AgentMetadata.LogPrefixes.MafOllama,
             cancellationToken);
     }
@@ -107,6 +111,15 @@ public class LocationController : ControllerBase
 
         var thread = _agentFxAgent.GetNewThread();
         var response = await _agentFxAgent.RunAsync(prompt, thread);
+        return response?.Text ?? string.Empty;
+    }
+
+    private async Task<string> InvokeOllamaAgentAsync(string prompt, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var thread = _ollamaAgent.GetNewThread();
+        var response = await _ollamaAgent.RunAsync(prompt, thread);
         return response?.Text ?? string.Empty;
     }
 

@@ -4,6 +4,7 @@ using SharedEntities;
 using System.Text;
 using ZavaAgentsMetadata;
 using ZavaMAFLocal;
+using ZavaMAFOllama;
 
 namespace ToolReasoningService.Controllers;
 
@@ -13,13 +14,16 @@ public class ReasoningController : ControllerBase
 {
     private readonly ILogger<ReasoningController> _logger;
     private readonly AIAgent _agentFxAgent;
+    private readonly AIAgent _ollamaAgent;
 
     public ReasoningController(
         ILogger<ReasoningController> logger,
-        MAFLocalAgentProvider localAgentProvider)
+        MAFLocalAgentProvider localAgentProvider,
+        MAFOllamaAgentProvider ollamaAgentProvider)
     {
         _logger = logger;
         _agentFxAgent = localAgentProvider.GetAgentByName(AgentMetadata.GetLocalAgentName(AgentType.ToolReasoningAgent));
+        _ollamaAgent = ollamaAgentProvider.GetAgentByName(AgentMetadata.GetAgentName(AgentType.ToolReasoningAgent));
     }
 
     [HttpPost("analyze_generate/llm")]
@@ -66,7 +70,7 @@ public class ReasoningController : ControllerBase
 
         return await GenerateReasoningAsync(
             request,
-            async (prompt, token) => await InvokeAgentFrameworkAsync(prompt, token),
+            async (prompt, token) => await InvokeOllamaAgentAsync(prompt, token),
             AgentMetadata.LogPrefixes.MafOllama,
             cancellationToken);
     }
@@ -117,6 +121,15 @@ public class ReasoningController : ControllerBase
 
         var thread = _agentFxAgent.GetNewThread();
         var response = await _agentFxAgent.RunAsync(prompt, thread);
+        return response?.Text ?? string.Empty;
+    }
+
+    private async Task<string> InvokeOllamaAgentAsync(string prompt, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var thread = _ollamaAgent.GetNewThread();
+        var response = await _ollamaAgent.RunAsync(prompt, thread);
         return response?.Text ?? string.Empty;
     }
 

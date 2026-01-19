@@ -4,6 +4,7 @@ using SharedEntities;
 using System.Text.Json;
 using ZavaAgentsMetadata;
 using ZavaMAFLocal;
+using ZavaMAFOllama;
 
 namespace NavigationService.Controllers;
 
@@ -13,13 +14,16 @@ public class NavigationController : ControllerBase
 {
     private readonly ILogger<NavigationController> _logger;
     private readonly AIAgent _agentFxAgent;
+    private readonly AIAgent _ollamaAgent;
 
     public NavigationController(
         ILogger<NavigationController> logger,
-        MAFLocalAgentProvider localAgentProvider)
+        MAFLocalAgentProvider localAgentProvider,
+        MAFOllamaAgentProvider ollamaAgentProvider)
     {
         _logger = logger;
         _agentFxAgent = localAgentProvider.GetAgentByName(AgentMetadata.GetAgentName(AgentType.NavigationAgent));
+        _ollamaAgent = ollamaAgentProvider.GetAgentByName(AgentMetadata.GetAgentName(AgentType.NavigationAgent));
     }
 
     [HttpPost("analyze_directions/llm")]
@@ -54,7 +58,7 @@ public class NavigationController : ControllerBase
 
         return await GenerateDirectionsAsync(
             request,
-            InvokeAgentFrameworkAsync,
+            InvokeOllamaAgentAsync,
             AgentMetadata.LogPrefixes.MafOllama,
             cancellationToken);
     }
@@ -128,6 +132,15 @@ public class NavigationController : ControllerBase
 
         var thread = _agentFxAgent.GetNewThread();
         var response = await _agentFxAgent.RunAsync(prompt, thread);
+        return response?.Text ?? string.Empty;
+    }
+
+    private async Task<string> InvokeOllamaAgentAsync(string prompt, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var thread = _ollamaAgent.GetNewThread();
+        var response = await _ollamaAgent.RunAsync(prompt, thread);
         return response?.Text ?? string.Empty;
     }
 

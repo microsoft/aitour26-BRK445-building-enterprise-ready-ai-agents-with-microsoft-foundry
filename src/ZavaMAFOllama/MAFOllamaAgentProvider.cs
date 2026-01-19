@@ -75,17 +75,22 @@ public static class MAFOllamaAgentExtensions
             .CreateLogger("MAFOllamaAgentExtensions");
 
         // Get Ollama configuration
-        var ollamaEndpoint = builder.Configuration["Ollama__Endpoint"] 
+        var ollamaEndpoint = builder.Configuration["Ollama__Endpoint"]
             ?? builder.Configuration.GetConnectionString("ollamaEndpoint")
             ?? "http://localhost:11434";
         var chatModel = builder.Configuration["Ollama__ChatModel"] ?? "llama3.2";
+        var embeddingsDeploymentName = builder.Configuration["Ollama__EmbeddingsDeploymentName"] ?? "all-minilm";
 
-        logger?.LogInformation("Registering MAF Ollama agents using endpoint: {Endpoint}, model: {Model}", 
+        logger?.LogInformation("Registering MAF Ollama agents using endpoint: {Endpoint}, model: {Model}",
             ollamaEndpoint, chatModel);
 
         // Create Ollama client - OllamaApiClient directly implements IChatClient
         var ollamaClient = new OllamaApiClient(new Uri(ollamaEndpoint), chatModel);
         builder.Services.AddKeyedSingleton<IChatClient>("ollama", ollamaClient);
+
+        // Create Ollama embedding generator - OllamaApiClient directly implements IEmbeddingGenerator<string, Embedding<float>>
+        IEmbeddingGenerator<string, Embedding<float>> azureOpenAIEmbeddingClient = new OllamaApiClient(ollamaEndpoint, embeddingsDeploymentName);
+        builder.Services.AddKeyedSingleton<IEmbeddingGenerator<string, Embedding<float>>>("ollama", azureOpenAIEmbeddingClient);
 
         // Register the provider as singleton
         builder.Services.AddSingleton<MAFOllamaAgentProvider>(sp =>
@@ -144,7 +149,7 @@ public static class MAFOllamaAgentExtensions
             {
                 var workFlowName = "OllamaSequentialWorkflow";
                 logger?.LogInformation($"Creating MAF Ollama workflow: {workFlowName} - Type: Sequential");
-                
+
                 // create agent
                 var ollamaAgentProvider = sp.GetRequiredService<MAFOllamaAgentProvider>();
                 var productSearchAgent = ollamaAgentProvider.GetLocalAgentByName(AgentType.ProductSearchAgent);
@@ -174,7 +179,7 @@ public static class MAFOllamaAgentExtensions
             var locationServiceAgent = ollamaAgentProvider.GetLocalAgentByName(AgentType.LocationServiceAgent);
             var navigationAgent = ollamaAgentProvider.GetLocalAgentByName(AgentType.NavigationAgent);
 
-            var workflow = AgentWorkflowBuilder.BuildConcurrent(workFlowName, 
+            var workflow = AgentWorkflowBuilder.BuildConcurrent(workFlowName,
                 [productSearchAgent,
                 productMatchmakingAgent,
                 locationServiceAgent,

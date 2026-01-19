@@ -44,6 +44,7 @@
     <ProjectReference Include="..\SearchEntities\SearchEntities.csproj" />
     <ProjectReference Include="..\VectorEntities\VectorEntities.csproj" />
     <ProjectReference Include="..\SharedEntities\SharedEntities.csproj" />
+    <ProjectReference Include="..\ZavaWorkingModes\ZavaWorkingModes.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="wwwroot\images\" />
