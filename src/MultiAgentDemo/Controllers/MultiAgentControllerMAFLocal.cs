@@ -25,6 +25,7 @@ public class MultiAgentControllerMAFLocal : ControllerBase
 
     private readonly Workflow _sequentialWorkflow;
     private readonly Workflow _concurrentWorkflow;
+    private readonly Workflow _handOffWorkflow;
 
     public MultiAgentControllerMAFLocal(
         ILogger<MultiAgentControllerMAFLocal> logger,
@@ -41,6 +42,7 @@ public class MultiAgentControllerMAFLocal : ControllerBase
         // get workflows
         _sequentialWorkflow = localAgentProvider.GetLocalWorkflowByName("SequentialWorkflow");
         _concurrentWorkflow = localAgentProvider.GetLocalWorkflowByName("ConcurrentWorkflow");
+        _handOffWorkflow = localAgentProvider.GetLocalWorkflowByName("HandOffWorkflow");
     }
 
     /// <summary>
@@ -158,13 +160,13 @@ public class MultiAgentControllerMAFLocal : ControllerBase
 
         try
         {
-            var workflow = AgentWorkflowBuilder.CreateHandoffBuilderWith(_productSearchAgent)
-                .WithHandoff(_productSearchAgent, _productMatchmakingAgent)
-                .WithHandoff(_productMatchmakingAgent, _locationServiceAgent)
-                .WithHandoff(_locationServiceAgent, _navigationAgent)
-                .Build();
+            //var workflow = AgentWorkflowBuilder.CreateHandoffBuilderWith(_productSearchAgent)
+            //    .WithHandoff(_productSearchAgent, _productMatchmakingAgent)
+            //    .WithHandoff(_productMatchmakingAgent, _locationServiceAgent)
+            //    .WithHandoff(_locationServiceAgent, _navigationAgent)
+            //    .Build();
 
-            var workflowResponse = await RunWorkflowAsync(request, workflow);
+            var workflowResponse = await RunWorkflowAsync(request, _handOffWorkflow);
             return Ok(workflowResponse);
         }
         catch (Exception ex)
