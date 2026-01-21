@@ -2,6 +2,7 @@ using Microsoft.Agents.AI.DevUI;
 using SingleAgentDemo.Services;
 using ZavaMAFLocal;
 using ZavaMAFFoundry;
+using ZavaMAFOllama;
 using DataServiceClient;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -24,6 +25,9 @@ builder.AddMAFFoundryAgents();
 
 // Register MAF Local agents (locally created with IChatClient)
 builder.AddMAFLocalAgents();
+
+// Register MAF Ollama agents (locally created with Ollama)
+builder.AddMAFOllamaAgents();
 
 // Register HTTP clients for external services (used by LLM direct call and DirectCall modes)
 RegisterHttpClients(builder);

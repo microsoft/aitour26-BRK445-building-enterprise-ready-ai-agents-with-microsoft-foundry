@@ -29,7 +29,7 @@ public class CustomerInformationService
     {
         try
         {
-            var endpoint = $"/api/Customer/{customerId}/{_framework}";
+            var endpoint = $"/api/Customer/{customerId}/analyze_{_framework}";
             _logger.LogInformation($"[CustomerInformationService] Calling endpoint: {endpoint}");
             var response = await _httpClient.GetAsync(endpoint);
             
@@ -62,7 +62,7 @@ public class CustomerInformationService
                 Prompt = prompt
             };
 
-            var endpoint = $"/api/Customer/match-tools/{_framework}";
+            var endpoint = $"/api/Customer/analyze_match_tools/{_framework}";
             _logger.LogInformation($"[CustomerInformationService] Calling endpoint: {endpoint}");
             var response = await _httpClient.PostAsJsonAsync(endpoint, matchRequest);
             

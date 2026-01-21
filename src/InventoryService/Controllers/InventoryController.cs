@@ -19,7 +19,7 @@ public class InventoryController : ControllerBase
         _dataServiceClient = dataServiceClient;
     }
 
-    [HttpPost("search_llm")]
+    [HttpPost("analyze_search_llm")]
     public async Task<ActionResult<ToolRecommendation[]>> SearchInventoryLlmAsync([FromBody] InventorySearchRequest request, CancellationToken cancellationToken)
     {
         _logger.LogInformation($"{AgentMetadata.LogPrefixes.Llm} Searching inventory for query: {{SearchQuery}}", request.SearchQuery);
@@ -28,7 +28,7 @@ public class InventoryController : ControllerBase
         return await SearchInventoryFromDataServiceAsync(request, AgentMetadata.LogPrefixes.Llm, cancellationToken);
     }
            
-    [HttpPost("searchmaf_local")]  // Using constant AgentMetadata.FrameworkIdentifiers.MafLocal
+    [HttpPost("analyze_search_maf_local")]  // Using constant AgentMetadata.FrameworkIdentifiers.MafLocal
     public async Task<ActionResult<ToolRecommendation[]>> SearchInventoryMAFLocalAsync([FromBody] InventorySearchRequest request, CancellationToken cancellationToken)
     {
         _logger.LogInformation($"{AgentMetadata.LogPrefixes.MafLocal} Searching inventory for query: {{SearchQuery}}", request.SearchQuery);
@@ -37,7 +37,7 @@ public class InventoryController : ControllerBase
         return await SearchInventoryFromDataServiceAsync(request, AgentMetadata.LogPrefixes.MafLocal, cancellationToken);
     }
 
-    [HttpPost("searchmaf_foundry")]  // Using constant AgentMetadata.FrameworkIdentifiers.MafFoundry
+    [HttpPost("analyze_search_maf_foundry")]  // Using constant AgentMetadata.FrameworkIdentifiers.MafFoundry
     public async Task<ActionResult<ToolRecommendation[]>> SearchInventoryMAFFoundryAsync([FromBody] InventorySearchRequest request, CancellationToken cancellationToken)
     {
         _logger.LogInformation($"{AgentMetadata.LogPrefixes.MafFoundry} Searching inventory for query: {{SearchQuery}}", request.SearchQuery);
@@ -46,7 +46,16 @@ public class InventoryController : ControllerBase
         return await SearchInventoryFromDataServiceAsync(request, AgentMetadata.LogPrefixes.MafFoundry, cancellationToken);
     }
 
-    [HttpPost("search_directcall")]
+    [HttpPost("analyze_search_maf_ollama")]  // Using constant AgentMetadata.FrameworkIdentifiers.MafOllama
+    public async Task<ActionResult<ToolRecommendation[]>> SearchInventoryMAFOllamaAsync([FromBody] InventorySearchRequest request, CancellationToken cancellationToken)
+    {
+        _logger.LogInformation($"{AgentMetadata.LogPrefixes.MafOllama} Searching inventory for query: {{SearchQuery}}", request.SearchQuery);
+
+        // Use DataServiceClient directly instead of Agent
+        return await SearchInventoryFromDataServiceAsync(request, AgentMetadata.LogPrefixes.MafOllama, cancellationToken);
+    }
+
+    [HttpPost("analyze_search_direct_call")]
     public async Task<ActionResult<ToolRecommendation[]>> SearchInventoryDirectCallAsync([FromBody] InventorySearchRequest request, CancellationToken cancellationToken)
     {
         _logger.LogInformation($"{AgentMetadata.LogPrefixes.DirectCall} Searching inventory for query: {{SearchQuery}}", request.SearchQuery);
