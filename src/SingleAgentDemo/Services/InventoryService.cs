@@ -53,12 +53,12 @@ public class InventoryService
             var searchRequest = new InventorySearchRequest { SearchQuery = searchQuery };
             
             var endpointName = GetEndpointForFramework(_framework);
-            var endpoint = $"/api/Inventory/{endpointName}";
+            var endpoint = $"/api/inventory/{endpointName}";
             _logger.LogInformation($"[InventoryService] Calling endpoint: {endpoint}");
             
-            // Create a cancellation token with a 15-second timeout
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
-            var response = await _httpClient.PostAsJsonAsync(endpoint, searchRequest, cts.Token);
+            //// Create a cancellation token with a 15-second timeout
+            //using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            var response = await _httpClient.PostAsJsonAsync(endpoint, searchRequest);
             
             _logger.LogInformation($"InventoryService HTTP status code: {response.StatusCode}");
             
