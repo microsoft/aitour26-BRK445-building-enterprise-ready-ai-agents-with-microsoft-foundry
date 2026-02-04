@@ -18,10 +18,25 @@
 .top-row {
     height: 3.5rem;
     background-color: rgba(0,0,0,0.4);
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+}
+
+.top-row .container-fluid {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
 }
 
 .navbar-brand {
     font-size: 1.1rem;
+    line-height: 1;
+    margin: 0;
+    display: flex;
+    align-items: center;
 }
 
 .bi {
@@ -79,6 +94,14 @@
     border: none;
     border-top: 1px solid rgba(255, 255, 255, 0.2);
     margin: 0.5rem 1rem;
+}
+
+/* Section headings styling with better contrast */
+.nav-item .text-muted {
+    color: #87CEEB !important;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .nav-item {
