@@ -19,7 +19,7 @@ public class CustomerController : ControllerBase
         _dataServiceClient = dataServiceClient;
     }
 
-    [HttpGet("{customerId}/llm")]
+    [HttpGet("{customerId}/analyze_llm")]
     public async Task<ActionResult<CustomerInformation>> GetCustomerLlmAsync(string customerId, CancellationToken cancellationToken)
     {
         _logger.LogInformation($"{AgentMetadata.LogPrefixes.Llm} Getting customer information for ID: {{CustomerId}}", customerId);
@@ -28,7 +28,7 @@ public class CustomerController : ControllerBase
         return await GetCustomerFromDataServiceAsync(customerId, AgentMetadata.LogPrefixes.Llm, cancellationToken);
     }
 
-    [HttpGet("{customerId}/maf_local")]  // Using constant AgentMetadata.FrameworkIdentifiers.MafLocal
+    [HttpGet("{customerId}/analyze_maf_local")]  // Using constant AgentMetadata.FrameworkIdentifiers.MafLocal
     public async Task<ActionResult<CustomerInformation>> GetCustomerMAFLocalAsync(string customerId, CancellationToken cancellationToken)
     {
         _logger.LogInformation($"{AgentMetadata.LogPrefixes.MafLocal} Getting customer information for ID: {{CustomerId}}", customerId);
@@ -37,7 +37,7 @@ public class CustomerController : ControllerBase
         return await GetCustomerFromDataServiceAsync(customerId, AgentMetadata.LogPrefixes.MafLocal, cancellationToken);
     }
 
-    [HttpGet("{customerId}/maf_foundry")]  // Using constant AgentMetadata.FrameworkIdentifiers.MafFoundry
+    [HttpGet("{customerId}/analyze_maf_foundry")]  // Using constant AgentMetadata.FrameworkIdentifiers.MafFoundry
     public async Task<ActionResult<CustomerInformation>> GetCustomerMAFFoundryAsync(string customerId, CancellationToken cancellationToken)
     {
         _logger.LogInformation($"{AgentMetadata.LogPrefixes.MafFoundry} Getting customer information for ID: {{CustomerId}}", customerId);
@@ -46,7 +46,16 @@ public class CustomerController : ControllerBase
         return await GetCustomerFromDataServiceAsync(customerId, AgentMetadata.LogPrefixes.MafFoundry, cancellationToken);
     }
 
-    [HttpPost("match-tools/llm")]
+    [HttpGet("{customerId}/analyze_maf_ollama")]  // Using constant AgentMetadata.FrameworkIdentifiers.MafOllama
+    public async Task<ActionResult<CustomerInformation>> GetCustomerMAFOllamaAsync(string customerId, CancellationToken cancellationToken)
+    {
+        _logger.LogInformation($"{AgentMetadata.LogPrefixes.MafOllama} Getting customer information for ID: {{CustomerId}}", customerId);
+
+        // Use DataServiceClient directly instead of Agent
+        return await GetCustomerFromDataServiceAsync(customerId, AgentMetadata.LogPrefixes.MafOllama, cancellationToken);
+    }
+
+    [HttpPost("analyze_match_tools/llm")]
     public async Task<ActionResult<ToolMatchResult>> MatchToolsLlm([FromBody] ToolMatchRequest request)
     {
         _logger.LogInformation($"{AgentMetadata.LogPrefixes.Llm} Matching tools for customer {{CustomerId}}", request.CustomerId);
@@ -54,7 +63,7 @@ public class CustomerController : ControllerBase
         return await MatchToolsInternal(request, AgentMetadata.LogPrefixes.Llm);
     }
 
-    [HttpPost("match-tools/maf_local")]  // Using constant AgentMetadata.FrameworkIdentifiers.MafLocal
+    [HttpPost("analyze_match_tools/maf_local")]  // Using constant AgentMetadata.FrameworkIdentifiers.MafLocal
     public async Task<ActionResult<ToolMatchResult>> MatchToolsMAF([FromBody] ToolMatchRequest request)
     {
         _logger.LogInformation($"{AgentMetadata.LogPrefixes.MafLocal} Matching tools for customer {{CustomerId}}", request.CustomerId);
@@ -62,7 +71,15 @@ public class CustomerController : ControllerBase
         return await MatchToolsInternal(request, AgentMetadata.LogPrefixes.MafLocal);
     }
 
-    [HttpGet("{customerId}/directcall")]
+    [HttpPost("analyze_match_tools/maf_ollama")]  // Using constant AgentMetadata.FrameworkIdentifiers.MafOllama
+    public async Task<ActionResult<ToolMatchResult>> MatchToolsMAFOllama([FromBody] ToolMatchRequest request)
+    {
+        _logger.LogInformation($"{AgentMetadata.LogPrefixes.MafOllama} Matching tools for customer {{CustomerId}}", request.CustomerId);
+        // Use DataServiceClient to get customer information
+        return await MatchToolsInternal(request, AgentMetadata.LogPrefixes.MafOllama);
+    }
+
+    [HttpGet("{customerId}/analyze_direct_call")]
     public async Task<ActionResult<CustomerInformation>> GetCustomerDirectCallAsync(string customerId)
     {
         _logger.LogInformation($"{AgentMetadata.LogPrefixes.DirectCall} Getting customer information for ID: {{CustomerId}}", customerId);
@@ -74,7 +91,7 @@ public class CustomerController : ControllerBase
         return await GetCustomerFromDataServiceAsync(customerId, AgentMetadata.LogPrefixes.DirectCall, CancellationToken.None);
     }
 
-    [HttpPost("match-tools/directcall")]
+    [HttpPost("analyze_match_tools/direct_call")]
     public async Task<ActionResult<ToolMatchResult>> MatchToolsDirectCall([FromBody] ToolMatchRequest request)
     {
         _logger.LogInformation($"{AgentMetadata.LogPrefixes.DirectCall} Matching tools for customer {{CustomerId}}", request.CustomerId);

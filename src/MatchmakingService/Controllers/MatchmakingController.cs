@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text.Json;
 using ZavaAgentsMetadata;
 using ZavaMAFLocal;
+using ZavaMAFOllama;
 
 namespace MatchmakingService.Controllers;
 
@@ -15,16 +16,19 @@ public class MatchmakingController : ControllerBase
 {
     private readonly ILogger<MatchmakingController> _logger;
     private readonly AIAgent _agentFxAgent;
+    private readonly AIAgent _ollamaAgent;
 
     public MatchmakingController(
         ILogger<MatchmakingController> logger,
-        MAFLocalAgentProvider localAgentProvider)
+        MAFLocalAgentProvider localAgentProvider,
+        MAFOllamaAgentProvider ollamaAgentProvider)
     {
         _logger = logger;
         _agentFxAgent = localAgentProvider.GetAgentByName(AgentMetadata.GetAgentName(AgentType.ProductMatchmakingAgent));
+        _ollamaAgent = ollamaAgentProvider.GetAgentByName(AgentMetadata.GetAgentName(AgentType.ProductMatchmakingAgent));
     }
 
-    [HttpPost("alternatives/llm")]
+    [HttpPost("analyze_alternatives/llm")]
     public async Task<ActionResult<MatchmakingResult>> FindAlternativesLlmAsync([FromBody] AlternativesRequest request, CancellationToken cancellationToken)
     {
         _logger.LogInformation($"{AgentMetadata.LogPrefixes.Llm} Finding alternatives for product: {{ProductQuery}}, User: {{UserId}}", request.ProductQuery, request.UserId);
@@ -37,7 +41,7 @@ public class MatchmakingController : ControllerBase
             cancellationToken);
     }
 
-    [HttpPost("alternatives/maf")]  // Using constant AgentMetadata.FrameworkIdentifiers.Maf
+    [HttpPost("analyze_alternatives/maf")]  // Using constant AgentMetadata.FrameworkIdentifiers.Maf
     public async Task<ActionResult<MatchmakingResult>> FindAlternativesMAFAsync([FromBody] AlternativesRequest request, CancellationToken cancellationToken)
     {
         _logger.LogInformation($"{AgentMetadata.LogPrefixes.Maf} Finding alternatives for product: {{ProductQuery}}, User: {{UserId}}", request.ProductQuery, request.UserId);
@@ -49,7 +53,19 @@ public class MatchmakingController : ControllerBase
             cancellationToken);
     }
 
-    [HttpPost("alternatives/directcall")]
+    [HttpPost("analyze_alternatives/maf_ollama")]  // Using constant AgentMetadata.FrameworkIdentifiers.MafOllama
+    public async Task<ActionResult<MatchmakingResult>> FindAlternativesMAFOllamaAsync([FromBody] AlternativesRequest request, CancellationToken cancellationToken)
+    {
+        _logger.LogInformation($"{AgentMetadata.LogPrefixes.MafOllama} Finding alternatives for product: {{ProductQuery}}, User: {{UserId}}", request.ProductQuery, request.UserId);
+
+        return await FindAlternativesAsync(
+            request,
+            InvokeOllamaAgentAsync,
+            AgentMetadata.LogPrefixes.MafOllama,
+            cancellationToken);
+    }
+
+    [HttpPost("analyze_alternatives/direct_call")]
     public ActionResult<MatchmakingResult> FindAlternativesDirectCallAsync([FromBody] AlternativesRequest request)
     {
         _logger.LogInformation("[DirectCall] Finding alternatives for product: {ProductQuery}, User: {UserId}", request.ProductQuery, request.UserId);
@@ -96,6 +112,15 @@ public class MatchmakingController : ControllerBase
 
         var thread = _agentFxAgent.GetNewThread();
         var response = await _agentFxAgent.RunAsync(prompt, thread);
+        return response?.Text ?? string.Empty;
+    }
+
+    private async Task<string> InvokeOllamaAgentAsync(string prompt, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var thread = _ollamaAgent.GetNewThread();
+        var response = await _ollamaAgent.RunAsync(prompt, thread);
         return response?.Text ?? string.Empty;
     }
 

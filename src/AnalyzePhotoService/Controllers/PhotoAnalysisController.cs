@@ -4,6 +4,7 @@ using SharedEntities;
 using System.Text.Json;
 using ZavaAgentsMetadata;
 using ZavaMAFLocal;
+using ZavaMAFOllama;
 
 namespace AnalyzePhotoService.Controllers;
 
@@ -13,16 +14,19 @@ public class PhotoAnalysisController : ControllerBase
 {
     private readonly ILogger<PhotoAnalysisController> _logger;
     private readonly AIAgent _agentFxAgent;
+    private readonly AIAgent _ollamaAgent;
 
     public PhotoAnalysisController(
         ILogger<PhotoAnalysisController> logger,
-        MAFLocalAgentProvider localAgentProvider)
+        MAFLocalAgentProvider localAgentProvider,
+        MAFOllamaAgentProvider ollamaAgentProvider)
     {
         _logger = logger;
         _agentFxAgent = localAgentProvider.GetAgentByName(AgentMetadata.GetAgentName(AgentType.PhotoAnalyzerAgent));
+        _ollamaAgent = ollamaAgentProvider.GetAgentByName(AgentMetadata.GetAgentName(AgentType.PhotoAnalyzerAgent));
     }
 
-    [HttpPost("analyzellm")]
+    [HttpPost("analyze_llm")]
     public async Task<ActionResult<PhotoAnalysisResult>> AnalyzeLLMAsync([FromForm] IFormFile image, [FromForm] string prompt, CancellationToken cancellationToken = default)
     {
         if (image is null)
@@ -41,7 +45,7 @@ public class PhotoAnalysisController : ControllerBase
             cancellationToken);
     }
 
-    [HttpPost("analyzemaf_local")]  // Using constant AgentMetadata.FrameworkIdentifiers.MafLocal
+    [HttpPost("analyze_maf_local")]  // Using constant AgentMetadata.FrameworkIdentifiers.MafLocal
     public async Task<ActionResult<PhotoAnalysisResult>> AnalyzeMAFLocalAsync([FromForm] IFormFile image, [FromForm] string prompt, CancellationToken cancellationToken = default)
     {
         if (image is null)
@@ -59,7 +63,7 @@ public class PhotoAnalysisController : ControllerBase
             cancellationToken);
     }
 
-    [HttpPost("analyzemaf_foundry")]  // Using constant AgentMetadata.FrameworkIdentifiers.MafFoundry
+    [HttpPost("analyze_maf_foundry")]  // Using constant AgentMetadata.FrameworkIdentifiers.MafFoundry
     public async Task<ActionResult<PhotoAnalysisResult>> AnalyzeMAFFoundryAsync([FromForm] IFormFile image, [FromForm] string prompt, CancellationToken cancellationToken = default)
     {
         if (image is null)
@@ -77,7 +81,25 @@ public class PhotoAnalysisController : ControllerBase
             cancellationToken);
     }
 
-    [HttpPost("analyzedirectcall")]
+    [HttpPost("analyze_maf_ollama")]  // Using constant AgentMetadata.FrameworkIdentifiers.MafOllama
+    public async Task<ActionResult<PhotoAnalysisResult>> AnalyzeMAFOllamaAsync([FromForm] IFormFile image, [FromForm] string prompt, CancellationToken cancellationToken = default)
+    {
+        if (image is null)
+        {
+            return BadRequest("No image file was provided.");
+        }
+
+        _logger.LogInformation($"{AgentMetadata.LogPrefixes.MafOllama} Analyzing photo. Prompt: {{Prompt}}", prompt);
+
+        return await AnalyzeWithAgentAsync(
+            prompt,
+            image.FileName,
+            async (analysisPrompt) => await GetOllamaAgentResponseAsync(analysisPrompt),
+            AgentMetadata.LogPrefixes.MafOllama,
+            cancellationToken);
+    }
+
+    [HttpPost("analyze_direct_call")]
     public async Task<ActionResult<PhotoAnalysisResult>> AnalyzeDirectCallAsync([FromForm] IFormFile image, [FromForm] string prompt, CancellationToken cancellationToken = default)
     {
         if (image is null)
@@ -142,6 +164,14 @@ public class PhotoAnalysisController : ControllerBase
     {
         var thread = _agentFxAgent.GetNewThread();
         var response = await _agentFxAgent.RunAsync(prompt, thread);
+        return response?.Text ?? string.Empty;
+    }
+
+    // Ollama agent invocation helper
+    private async Task<string> GetOllamaAgentResponseAsync(string prompt)
+    {
+        var thread = _ollamaAgent.GetNewThread();
+        var response = await _ollamaAgent.RunAsync(prompt, thread);
         return response?.Text ?? string.Empty;
     }
 

@@ -28,7 +28,12 @@ public enum WorkingMode
     /// <summary>
     /// Microsoft Agent Framework using locally created agents with gpt-5-mini model.
     /// </summary>
-    MafLocal
+    MafLocal,
+
+    /// <summary>
+    /// Microsoft Agent Framework using locally hosted Ollama models (llama3.2 for chat, all-minilm for embeddings).
+    /// </summary>
+    MafOllama
 }
 
 /// <summary>
@@ -46,6 +51,7 @@ public static class WorkingModeProvider
         WorkingMode.MafFoundry => "maf_foundry",
         WorkingMode.MafAIFoundry => "maf_ai_foundry",
         WorkingMode.MafLocal => "maf_local",
+        WorkingMode.MafOllama => "maf_ollama",
         _ => throw new ArgumentOutOfRangeException(nameof(mode))
     };
 
@@ -59,6 +65,7 @@ public static class WorkingModeProvider
         WorkingMode.MafFoundry => "MAF - Microsoft Foundry Agents",
         WorkingMode.MafAIFoundry => "MAF - Microsoft AI Foundry Agents",
         WorkingMode.MafLocal => "MAF - Local Agents",
+        WorkingMode.MafOllama => "MAF - Ollama",
         _ => throw new ArgumentOutOfRangeException(nameof(mode))
     };
 
@@ -72,6 +79,7 @@ public static class WorkingModeProvider
         WorkingMode.MafFoundry => "Microsoft Agent Framework using Agents deployed and hosted in Microsoft Foundry. Production-ready with cloud-managed agents.",
         WorkingMode.MafAIFoundry => "Microsoft Agent Framework using Agents deployed and hosted in Microsoft AI Foundry. Production-ready with cloud-managed agents.",
         WorkingMode.MafLocal => "Microsoft Agent Framework using locally created agents with gpt-5-mini model. Agents are created with instructions and tools configured locally.",
+        WorkingMode.MafOllama => "Microsoft Agent Framework using locally hosted Ollama models (llama3.2 for chat, all-minilm for embeddings).",
         _ => throw new ArgumentOutOfRangeException(nameof(mode))
     };
 
@@ -84,7 +92,7 @@ public static class WorkingModeProvider
     /// Gets all available working modes.
     /// </summary>
     public static IReadOnlyList<WorkingMode> AllModes => 
-        [WorkingMode.DirectCall, WorkingMode.Llm, WorkingMode.MafFoundry, WorkingMode.MafLocal];
+        [WorkingMode.DirectCall, WorkingMode.Llm, WorkingMode.MafFoundry, WorkingMode.MafLocal, WorkingMode.MafOllama];
 
     /// <summary>
     /// Parses a short name string to a WorkingMode.
@@ -103,6 +111,7 @@ public static class WorkingModeProvider
             "maf_ai_foundry" => WorkingMode.MafAIFoundry,
             "maf" => WorkingMode.MafFoundry, // backward compatibility
             "maf_local" => WorkingMode.MafLocal,
+            "maf_ollama" => WorkingMode.MafOllama,
             _ => DefaultMode
         };
     }
@@ -125,6 +134,7 @@ public static class WorkingModeProvider
             "maf_ai_foundry" => WorkingMode.MafAIFoundry,
             "maf" => WorkingMode.MafFoundry,
             "maf_local" => WorkingMode.MafLocal,
+            "maf_ollama" => WorkingMode.MafOllama,
             _ => null
         };
 

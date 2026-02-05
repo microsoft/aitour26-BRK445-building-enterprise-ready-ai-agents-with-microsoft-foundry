@@ -65,6 +65,7 @@ public class MultiAgentService
             WorkingMode.Llm => "llm",
             WorkingMode.MafFoundry => "maf_foundry",
             WorkingMode.MafLocal => "maf_local",
+            WorkingMode.MafOllama => "maf_ollama",
             _ => "maf_foundry"
         };
         var baseRoute = $"/api/multiagent/{modePath}";

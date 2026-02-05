@@ -4,6 +4,7 @@ using SharedEntities;
 using System.Text;
 using ZavaAgentsMetadata;
 using ZavaMAFLocal;
+using ZavaMAFOllama;
 
 namespace ToolReasoningService.Controllers;
 
@@ -13,16 +14,19 @@ public class ReasoningController : ControllerBase
 {
     private readonly ILogger<ReasoningController> _logger;
     private readonly AIAgent _agentFxAgent;
+    private readonly AIAgent _ollamaAgent;
 
     public ReasoningController(
         ILogger<ReasoningController> logger,
-        MAFLocalAgentProvider localAgentProvider)
+        MAFLocalAgentProvider localAgentProvider,
+        MAFOllamaAgentProvider ollamaAgentProvider)
     {
         _logger = logger;
         _agentFxAgent = localAgentProvider.GetAgentByName(AgentMetadata.GetLocalAgentName(AgentType.ToolReasoningAgent));
+        _ollamaAgent = ollamaAgentProvider.GetAgentByName(AgentMetadata.GetAgentName(AgentType.ToolReasoningAgent));
     }
 
-    [HttpPost("generate/llm")]
+    [HttpPost("analyze_generate/llm")]
     public async Task<ActionResult<string>> GenerateReasoningLlmAsync([FromBody] ReasoningRequest request, CancellationToken cancellationToken)
     {
         _logger.LogInformation($"{AgentMetadata.LogPrefixes.Llm} Generating reasoning for prompt");
@@ -35,7 +39,7 @@ public class ReasoningController : ControllerBase
             cancellationToken);
     }
 
-    [HttpPost("generate/maf_local")]  // Using constant AgentMetadata.FrameworkIdentifiers.MafLocal
+    [HttpPost("analyze_generate/maf_local")]  // Using constant AgentMetadata.FrameworkIdentifiers.MafLocal
     public async Task<ActionResult<string>> GenerateReasoningMAFLocalAsync([FromBody] ReasoningRequest request, CancellationToken cancellationToken)
     {
         _logger.LogInformation($"{AgentMetadata.LogPrefixes.MafLocal} Generating reasoning for prompt");
@@ -47,7 +51,7 @@ public class ReasoningController : ControllerBase
             cancellationToken);
     }
 
-    [HttpPost("generate/maf_foundry")]  // Using constant AgentMetadata.FrameworkIdentifiers.MafFoundry
+    [HttpPost("analyze_generate/maf_foundry")]  // Using constant AgentMetadata.FrameworkIdentifiers.MafFoundry
     public async Task<ActionResult<string>> GenerateReasoningMAFFoundryAsync([FromBody] ReasoningRequest request, CancellationToken cancellationToken)
     {
         _logger.LogInformation($"{AgentMetadata.LogPrefixes.MafFoundry} Generating reasoning for prompt");
@@ -59,7 +63,19 @@ public class ReasoningController : ControllerBase
             cancellationToken);
     }
 
-    [HttpPost("generate/directcall")]
+    [HttpPost("analyze_generate/maf_ollama")]  // Using constant AgentMetadata.FrameworkIdentifiers.MafOllama
+    public async Task<ActionResult<string>> GenerateReasoningMAFOllamaAsync([FromBody] ReasoningRequest request, CancellationToken cancellationToken)
+    {
+        _logger.LogInformation($"{AgentMetadata.LogPrefixes.MafOllama} Generating reasoning for prompt");
+
+        return await GenerateReasoningAsync(
+            request,
+            async (prompt, token) => await InvokeOllamaAgentAsync(prompt, token),
+            AgentMetadata.LogPrefixes.MafOllama,
+            cancellationToken);
+    }
+
+    [HttpPost("analyze_generate/direct_call")]
     public ActionResult<string> GenerateReasoningDirectCallAsync([FromBody] ReasoningRequest request)
     {
         _logger.LogInformation("[DirectCall] Generating reasoning for prompt");
@@ -105,6 +121,15 @@ public class ReasoningController : ControllerBase
 
         var thread = _agentFxAgent.GetNewThread();
         var response = await _agentFxAgent.RunAsync(prompt, thread);
+        return response?.Text ?? string.Empty;
+    }
+
+    private async Task<string> InvokeOllamaAgentAsync(string prompt, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var thread = _ollamaAgent.GetNewThread();
+        var response = await _ollamaAgent.RunAsync(prompt, thread);
         return response?.Text ?? string.Empty;
     }
 

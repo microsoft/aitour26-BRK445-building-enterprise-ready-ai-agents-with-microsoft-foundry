@@ -4,6 +4,7 @@ using SharedEntities;
 using System.Text.Json;
 using ZavaAgentsMetadata;
 using ZavaMAFLocal;
+using ZavaMAFOllama;
 
 namespace NavigationService.Controllers;
 
@@ -13,16 +14,19 @@ public class NavigationController : ControllerBase
 {
     private readonly ILogger<NavigationController> _logger;
     private readonly AIAgent _agentFxAgent;
+    private readonly AIAgent _ollamaAgent;
 
     public NavigationController(
         ILogger<NavigationController> logger,
-        MAFLocalAgentProvider localAgentProvider)
+        MAFLocalAgentProvider localAgentProvider,
+        MAFOllamaAgentProvider ollamaAgentProvider)
     {
         _logger = logger;
         _agentFxAgent = localAgentProvider.GetAgentByName(AgentMetadata.GetAgentName(AgentType.NavigationAgent));
+        _ollamaAgent = ollamaAgentProvider.GetAgentByName(AgentMetadata.GetAgentName(AgentType.NavigationAgent));
     }
 
-    [HttpPost("directions/llm")]
+    [HttpPost("analyze_directions/llm")]
     public async Task<ActionResult<NavigationInstructions>> GenerateDirectionsLlmAsync([FromBody] DirectionsRequest request, CancellationToken cancellationToken)
     {
         _logger.LogInformation($"{AgentMetadata.LogPrefixes.Llm} Generating directions from {{From}} to {{To}}", FormatLocation(request.From), FormatLocation(request.To));
@@ -35,7 +39,7 @@ public class NavigationController : ControllerBase
             cancellationToken);
     }
 
-    [HttpPost("directions/maf")]  // Using constant AgentMetadata.FrameworkIdentifiers.Maf
+    [HttpPost("analyze_directions/maf")]  // Using constant AgentMetadata.FrameworkIdentifiers.Maf
     public async Task<ActionResult<NavigationInstructions>> GenerateDirectionsMAFAsync([FromBody] DirectionsRequest request, CancellationToken cancellationToken)
     {
         _logger.LogInformation($"{AgentMetadata.LogPrefixes.Maf} Generating directions from {{From}} to {{To}}", FormatLocation(request.From), FormatLocation(request.To));
@@ -47,7 +51,19 @@ public class NavigationController : ControllerBase
             cancellationToken);
     }
 
-    [HttpPost("directions/directcall")]
+    [HttpPost("analyze_directions/maf_ollama")]  // Using constant AgentMetadata.FrameworkIdentifiers.MafOllama
+    public async Task<ActionResult<NavigationInstructions>> GenerateDirectionsMAFOllamaAsync([FromBody] DirectionsRequest request, CancellationToken cancellationToken)
+    {
+        _logger.LogInformation($"{AgentMetadata.LogPrefixes.MafOllama} Generating directions from {{From}} to {{To}}", FormatLocation(request.From), FormatLocation(request.To));
+
+        return await GenerateDirectionsAsync(
+            request,
+            InvokeOllamaAgentAsync,
+            AgentMetadata.LogPrefixes.MafOllama,
+            cancellationToken);
+    }
+
+    [HttpPost("analyze_directions/direct_call")]
     public ActionResult<NavigationInstructions> GenerateDirectionsDirectCallAsync([FromBody] DirectionsRequest request)
     {
         if (request is null)
@@ -116,6 +132,15 @@ public class NavigationController : ControllerBase
 
         var thread = _agentFxAgent.GetNewThread();
         var response = await _agentFxAgent.RunAsync(prompt, thread);
+        return response?.Text ?? string.Empty;
+    }
+
+    private async Task<string> InvokeOllamaAgentAsync(string prompt, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var thread = _ollamaAgent.GetNewThread();
+        var response = await _ollamaAgent.RunAsync(prompt, thread);
         return response?.Text ?? string.Empty;
     }
 
