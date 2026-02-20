@@ -43,24 +43,6 @@ The BRK445 solution supports two deployment models:
 
 4. **Azure OpenAI or OpenAI API Key** (for MAF Local mode)
 
-#### Configuration Files
-
-Create `appsettings.Development.json` files in each service:
-
-**Example for `src/DataService/appsettings.Development.json`**:
-```json
-{
-  "ConnectionStrings": {
-    "microsoftfoundrycnnstring": "Endpoint=https://YOUR-OPENAI-RESOURCE.openai.azure.com/;Key=YOUR-KEY",
-    "microsoftfoundryproject": "Endpoint=https://YOUR-FOUNDRY-RESOURCE.cognitiveservices.azure.com/;Key=YOUR-KEY"
-  },
-  "AI_ChatDeploymentName": "gpt-5-mini",
-  "AI_embeddingsDeploymentName": "text-embedding-3-small"
-}
-```
-
-**Note**: Never commit these files. They're in `.gitignore`.
-
 ### Step-by-Step Local Deployment
 
 #### Step 1: Clone and Build
