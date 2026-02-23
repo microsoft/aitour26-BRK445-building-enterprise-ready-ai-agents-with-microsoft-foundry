@@ -9,7 +9,7 @@
 	<ItemGroup>
 		<PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.1" />
 		<PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.0" />
-		<PackageReference Include="Aspire.Azure.AI.OpenAI" Version="13.1.0-preview.1.25616.3" />
+		<PackageReference Include="Aspire.Azure.AI.OpenAI" Version="13.1.1-preview.1.26105.8" />
 	</ItemGroup>
 
 	<ItemGroup>
