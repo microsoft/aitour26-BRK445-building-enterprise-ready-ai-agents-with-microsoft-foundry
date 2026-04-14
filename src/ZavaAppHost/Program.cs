@@ -85,6 +85,11 @@ var singleAgentDemo = builder.AddProject<Projects.SingleAgentDemo>("singleagentd
     .WaitFor(matchmakingService).WithReference(matchmakingService)
     .WaitFor(locationService).WithReference(locationService)
     .WaitFor(navigationService).WithReference(navigationService)
+    .WithUrlForEndpoint("http", annotation =>
+    {
+        annotation.DisplayText = "Single-Agent Demo DevUI";
+        annotation.Url = $"{annotation.Url}/devui";
+    })
     .WithExternalHttpEndpoints();
 
 // Multi Agent Demo - demonstrates multi-agent orchestration
@@ -98,6 +103,11 @@ var multiAgentDemo = builder.AddProject<Projects.MultiAgentDemo>("multiagentdemo
     .WaitFor(matchmakingService).WithReference(matchmakingService)
     .WaitFor(locationService).WithReference(locationService)
     .WaitFor(navigationService).WithReference(navigationService)
+    .WithUrlForEndpoint("http", annotation =>
+    {
+        annotation.DisplayText = "Multi-Agent Demo DevUI";
+        annotation.Url = $"{annotation.Url}/devui";
+    })
     .WithExternalHttpEndpoints();
 
 // ============================================================================
@@ -116,7 +126,7 @@ var store = builder.AddProject<Projects.Store>("store")
     .WaitFor(locationService).WithReference(locationService)
     .WaitFor(navigationService).WithReference(navigationService)
     .WaitFor(productSearchService).WithReference(productSearchService)
-    
+
     .WaitFor(singleAgentDemo).WithReference(singleAgentDemo)
     .WaitFor(multiAgentDemo).WithReference(multiAgentDemo)
 
