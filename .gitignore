@@ -10098,3 +10098,5 @@ deployment-*.txt
 .venv/lib/python3.11/site-packages/material/templates/.icons/material/printer-pos-remove.svg
 
 *.lscache
+infra/deployment_info*.json
+infra/deployment_info*.txt
