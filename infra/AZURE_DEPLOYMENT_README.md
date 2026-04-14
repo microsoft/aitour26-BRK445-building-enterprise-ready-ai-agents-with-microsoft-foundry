@@ -1,8 +1,35 @@
-# Azure Infrastructure Deployment Script
+# Azure Infrastructure Deployment
 
 ## Overview
 
-This Python script automates the deployment of Azure infrastructure resources required for the BRK445 project using **Bicep Infrastructure as Code**. It creates a complete environment including Resource Group, Application Insights, Storage Account, Azure AI Foundry Hub and Project, Azure SQL Server, and Database with initialization.
+This folder contains scripts to provision the Azure resources needed for the BRK445 project.
+
+### Recommended: `setup_azure.py` (all-in-one)
+
+The **`setup_azure.py`** script is the recommended way to set up the full Azure environment in a single run. It handles infrastructure, AI Services, model deployments, and .NET user secrets so you're ready to deploy agents and run Aspire immediately.
+
+```bash
+cd infra
+python setup_azure.py
+```
+
+If you already deployed infrastructure with `deploy_azure_resources.py`, you can skip that phase and only provision AI + secrets:
+
+```bash
+python setup_azure.py --skip-infra
+# or point at an existing deployment info file:
+python setup_azure.py --from-deployment deployment_info_myproject_20260414.json
+```
+
+Run `python setup_azure.py --help` for all options, including model name overrides.
+
+See the [What `setup_azure.py` does](#what-setup_azurepy-does) section below for details.
+
+---
+
+### Legacy: `deploy_azure_resources.py` (infrastructure only)
+
+This script deploys **only the core infrastructure** via Bicep. It does **not** create AI Services or configure .NET user secrets — those steps must be done separately (manually or via `setup_azure.py --skip-infra`).
 
 ## Features
 
@@ -12,14 +39,15 @@ This Python script automates the deployment of Azure infrastructure resources re
 - **Subscription Verification**: Confirms you're deploying to the correct Azure subscription
 - **Live Deployment Progress**: Shows real-time Bicep deployment progress in console
 - **Automatic Credential Saving**: Saves all secrets and connection strings to files (JSON + Text)
-- **Complete Resource Creation**:
+- **Infrastructure Created**:
   - Resource Group
   - Application Insights (Web Application type)
   - Storage Account (Standard_LRS)
-  - Microsoft Foundry (AI Services - unified AI capabilities)
   - Azure SQL Server (with firewall rules)
   - Azure SQL Database (Basic tier - lowest cost)
   - Database initialization with schema and seed data
+
+> **Note:** AI Services (Microsoft Foundry) and model deployments are handled by `setup_azure.py`, not this script.
 
 ## Prerequisites
 
@@ -39,11 +67,56 @@ This Python script automates the deployment of Azure infrastructure resources re
    pip install -r requirements.txt
    ```
 
-5. **Permissions**: You need contributor access to the Azure subscription
+5. **.NET SDK 10.x**: Required by `setup_azure.py` to configure user secrets (verify with `dotnet --version`)
+
+6. **Permissions**: You need contributor access to the Azure subscription
 
 ## Usage
 
-### Navigate to the infra folder
+### Option A: Full setup with `setup_azure.py` (Recommended)
+
+This is the fastest path to a working Azure environment. One script, everything configured.
+
+```bash
+cd infra
+python setup_azure.py
+```
+
+The script will:
+
+1. Confirm your Azure subscription
+2. Deploy core infrastructure via Bicep (Resource Group, SQL, Storage, App Insights)
+3. Create an Azure AI Services account (Microsoft Foundry)
+4. Deploy chat (`gpt-5-mini`) and embedding (`text-embedding-3-small`) models
+5. Configure .NET user secrets for both the agent deployer and Aspire AppHost
+
+After it completes, you can immediately:
+
+```bash
+# Deploy agents to Foundry
+cd infra && dotnet run
+
+# Run the demo
+cd src && aspire run
+```
+
+#### `setup_azure.py` options
+
+| Flag | Description |
+|------|-------------|
+| `--skip-infra` | Skip infrastructure deployment, auto-detect existing deployment info |
+| `--from-deployment FILE` | Use a specific deployment info JSON file |
+| `--chat-model NAME` | Override the chat model name (default: `gpt-5-mini`) |
+| `--embedding-model NAME` | Override the embedding model name (default: `text-embedding-3-small`) |
+| `--chat-sku SKU` | Chat model SKU type (default: `GlobalStandard`) |
+| `--embedding-sku SKU` | Embedding model SKU type (default: `Standard`) |
+| `--sku-capacity N` | Model capacity in K TPM (default: `10`) |
+
+### Option B: Infrastructure only with `deploy_azure_resources.py`
+
+If you only need the core infrastructure (SQL, Storage, App Insights) and will set up AI Services separately:
+
+#### Navigate to the infra folder
 
 ```bash
 cd infra
@@ -161,29 +234,53 @@ Human-readable format with all secrets and connection strings for easy reference
 
 ## Resources Created
 
-The Bicep template creates the following Azure resources:
+### By `deploy_azure_resources.py` (Bicep template)
 
 | Resource Type | Naming Convention | Configuration |
 |--------------|-------------------|---------------|
 | Resource Group | `{resource_name}-rg` | Location specified by user |
 | Application Insights | `{resource_name}-appinsights` | Web application type, ApplicationInsights ingestion mode |
 | Storage Account | `{resource_name}st` | Standard_LRS, StorageV2 |
-| Microsoft Foundry | `{resource_name}-foundry` | AI Services (unified AI capabilities) |
 | SQL Server | `{resource_name}-sqlserver` | With Azure services firewall rule |
 | SQL Database | `{resource_name}-db` | Basic tier (lowest cost) |
 
+### By `setup_azure.py` (in addition to the above)
+
+| Resource Type | Naming Convention | Configuration |
+|--------------|-------------------|---------------|
+| AI Services | `{resource_name}-aiservices` | AIServices kind, S0 SKU |
+| Chat Model Deployment | `gpt-5-mini` | GlobalStandard SKU (configurable) |
+| Embedding Model Deployment | `text-embedding-3-small` | Standard SKU (configurable) |
+
 **Note**: All resources are created in the same resource group for easy management and cleanup.
 
-### Microsoft Foundry (AI Services)
+## What `setup_azure.py` Does
 
-Microsoft Foundry provides unified AI capabilities through a single resource:
+The `setup_azure.py` script performs a complete end-to-end setup in three phases:
 
-- **Single AI Services Account**: No separate hub/project resources
-- **Unified Endpoint**: One endpoint for all AI operations
-- **No Managed Resource Groups**: Everything stays in your resource group
-- **Kind**: AIServices (consolidated AI capabilities)
+### Phase 1: Infrastructure (Bicep)
+- Creates Resource Group, App Insights, Storage Account, SQL Server, SQL Database
+- Adds your client IP to the SQL firewall
+- Saves deployment info to a JSON file (reusable with `--from-deployment`)
 
-This replaces the older pattern of creating Azure ML Workspaces (hub/project) which created separate managed resource groups.
+### Phase 2: AI Services (Microsoft Foundry)
+- Creates an Azure AI Services account (`Microsoft.CognitiveServices/accounts`, kind `AIServices`)
+- Deploys a chat model (default: `gpt-5-mini`)
+- Deploys an embedding model (default: `text-embedding-3-small`)
+- Retrieves the API endpoint and key
+
+### Phase 3: .NET User Secrets
+- Configures the **agent deployer** (`infra/Brk445-Console-DeployAgents.csproj`):
+  - `ProjectEndpoint` — AI Services endpoint
+  - `ModelDeploymentName` — chat model deployment name
+  - `TenantId` — Azure tenant ID
+  - `SqlServerConnectionString` — SQL connection string for database seeding
+- Configures the **Aspire AppHost** (`src/ZavaAppHost/ZavaAppHost.csproj`):
+  - `ConnectionStrings:microsoftfoundryproject` — AI Services endpoint
+  - `ConnectionStrings:tenantId` — Azure tenant ID
+  - `ConnectionStrings:appinsights` — App Insights connection string
+
+After all three phases complete, you can immediately run `dotnet run` in `infra/` to deploy agents, and `aspire run` in `src/` to start the application.
 
 ## Database Schema
 

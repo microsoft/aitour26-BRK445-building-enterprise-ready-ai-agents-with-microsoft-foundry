@@ -458,7 +458,9 @@ INSERT INTO Location (Section, Aisle, Shelf, Description) VALUES
 
 def get_connection_string(server_name: str, database_name: str, admin_user: str, admin_password: str) -> str:
     """Generate SQL Server connection string."""
-    return f"Server=tcp:{server_name}.database.windows.net,1433;Initial Catalog={database_name};Persist Security Info=False;User ID={admin_user};Password={admin_password};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+    # Quote password to handle special chars ({, }, ;, =) in ADO.NET connection strings
+    quoted_pw = f"'{admin_password}'" if any(c in admin_password for c in "{};='\"") else admin_password
+    return f"Server=tcp:{server_name}.database.windows.net,1433;Initial Catalog={database_name};Persist Security Info=False;User ID={admin_user};Password={quoted_pw};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
 
 
 def main():

@@ -69,8 +69,8 @@ try
     var runner = new AgentDeploymentRunner(client, modelDeploymentName, agentConfigPath, taskTracker);
 
     // Support optional command line switch --delete to skip interactive prompt
-    bool? deleteFlag = args.Contains("--delete", StringComparer.OrdinalIgnoreCase) ? true :
-                        args.Contains("--no-delete", StringComparer.OrdinalIgnoreCase) ? false : null;
+    bool? deleteFlag = true; // args.Contains("--delete", StringComparer.OrdinalIgnoreCase) ? true :
+                             //args.Contains("--no-delete", StringComparer.OrdinalIgnoreCase) ? false : null;
 
     runner.Run(deleteFlag);
 

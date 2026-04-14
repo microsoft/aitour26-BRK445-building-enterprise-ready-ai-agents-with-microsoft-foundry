@@ -76,11 +76,13 @@ internal sealed class AgentDeletionService : IAgentDeletionService
             if (_taskTracker != null)
             {
                 _taskTracker.AddLog($"[yellow]⚠[/] Unexpected error during deletion: {ex.Message}");
+                _taskTracker.AddLog(ex.ToString());
                 _taskTracker.AddLog("[grey]Continuing with agent creation...[/]");
             }
             else
             {
                 AnsiConsole.MarkupLine($"[yellow]⚠[/] Unexpected error during deletion: {ex.Message}");
+                AnsiConsole.MarkupLine(ex.ToString());
                 AnsiConsole.MarkupLine("[grey]Continuing with agent creation...[/]\n");
             }
         }

@@ -36,6 +36,27 @@ Developers, architects, and AI engineers who build production-grade agentic appl
 
 ## 💻 Development Setup
 
+### Azure Setup (one-time)
+
+Run the setup script to provision all Azure resources (infrastructure, AI Services, model deployments) and configure .NET user secrets:
+
+```bash
+cd infra
+python setup_azure.py
+```
+
+Then deploy agents and start the demo:
+
+```bash
+# Deploy agents to Microsoft Foundry
+cd infra && dotnet run
+
+# Run the Aspire application
+cd src && aspire run
+```
+
+See `infra/AZURE_DEPLOYMENT_README.md` for advanced options (skipping infra, overriding model names, etc.) and `session-delivery-resources/docs/02.NeededCloudResources.md` for manual setup via the Azure portal.
+
 ### Devcontainer Notes
 
 The devcontainer is configured to:
