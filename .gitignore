@@ -10096,3 +10096,5 @@ deployment-*.txt
 .venv/lib/python3.11/site-packages/material/templates/.icons/material/printer-pos-refresh.svg
 .venv/lib/python3.11/site-packages/material/templates/.icons/material/printer-pos-remove-outline.svg
 .venv/lib/python3.11/site-packages/material/templates/.icons/material/printer-pos-remove.svg
+
+*.lscache
