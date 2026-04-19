@@ -10101,3 +10101,4 @@ deployment-*.txt
 infra/deployment_info*.json
 infra/deployment_info*.txt
 infra/full_deployment_info*.json
+.playwright-mcp
