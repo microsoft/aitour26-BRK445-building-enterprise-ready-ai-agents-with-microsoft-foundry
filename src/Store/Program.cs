@@ -58,8 +58,8 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseStaticFiles();
 app.UseAntiforgery();
+app.MapStaticAssets();
 
 // Map DevUI endpoints for agent debugging (development only)
 if (app.Environment.IsDevelopment())

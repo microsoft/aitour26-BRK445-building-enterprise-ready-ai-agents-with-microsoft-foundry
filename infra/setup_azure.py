@@ -475,7 +475,8 @@ def get_ai_key(resource_group: str, account_name: str) -> str:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def configure_secrets(project_endpoint: str, ai_connection_string: str,
-                      chat_deployment: str, tenant_id: str,
+                      chat_deployment: str, embedding_deployment: str,
+                      tenant_id: str,
                       sql_connection_string: str,
                       appinsights_connection_string: str):
     """Set .NET user secrets for both the agent deployer and Aspire AppHost."""
@@ -502,6 +503,8 @@ def configure_secrets(project_endpoint: str, ai_connection_string: str,
             run_dotnet_secret(APPHOST_CSPROJ, "ConnectionStrings:tenantId", tenant_id)
         if appinsights_connection_string:
             run_dotnet_secret(APPHOST_CSPROJ, "ConnectionStrings:appinsights", appinsights_connection_string)
+        run_dotnet_secret(APPHOST_CSPROJ, "Parameters:chatDeploymentName", chat_deployment)
+        run_dotnet_secret(APPHOST_CSPROJ, "Parameters:embeddingsDeploymentName", embedding_deployment)
         print("  ✅ AppHost secrets set")
     else:
         print(f"  ⚠️  AppHost project not found at {APPHOST_CSPROJ}")
@@ -678,6 +681,7 @@ Examples:
         project_endpoint=project_endpoint,
         ai_connection_string=ai_connection_string,
         chat_deployment=chat_model,
+        embedding_deployment=embedding_model,
         tenant_id=tenant_id,
         sql_connection_string=sql_conn,
         appinsights_connection_string=appinsights_conn,
