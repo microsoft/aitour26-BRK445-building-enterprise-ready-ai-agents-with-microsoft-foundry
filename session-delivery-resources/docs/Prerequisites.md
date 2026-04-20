@@ -5,6 +5,7 @@ This file lists the minimum tooling and access required to run the aspiredemo (Z
 ## Required tooling
 
 - .NET SDK 10.x (verify with `dotnet --info` or `dotnet --list-sdks`) — [Download .NET](https://dotnet.microsoft.com/en-us/download)
+- Aspire CLI — Install with `curl -sSL https://aspire.dev/install.sh | bash` (Linux/macOS) or PowerShell `iex "& { $(irm https://aspire.dev/install.ps1) }"` (Windows). Verify with `aspire --version`. See https://aspire.dev/get-started/install-cli/ for details.
 - Visual Studio 2022 (recommended 17.14.13+) or Visual Studio Code with C#/.NET extensions
 - Docker Desktop (required only for containerized runs)
 - Git

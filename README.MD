@@ -40,8 +40,8 @@ Developers, architects, and AI engineers who build production-grade agentic appl
 
 The devcontainer is configured to:
 
-- ✅ Install .NET 10 SDK and Aspire workloads
-- ✅ Install Aspire CLI tool
+- ✅ Install .NET 10 SDK
+- ✅ Install Aspire CLI (via `https://aspire.dev/install.sh` or `https://aspire.dev/install.ps1`)
 
 #### Troubleshooting (Windows + WSL + Docker Desktop)
 
