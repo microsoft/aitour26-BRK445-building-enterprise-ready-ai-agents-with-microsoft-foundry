@@ -52,6 +52,21 @@ Pre-session checklist (30–60 minutes before)
 - [ ] Deploy required cloud resources (see `session-delivery-resources/docs/02.NeededCloudResources.md`) or confirm they already exist
 - [ ] Follow the instructions in `session-delivery-resources/docs/03.HowToRunDemoLocally.md` to run the demo locally and verify health endpoints
 
+### ⚡ T-30min Speaker Recovery Checklist
+
+Atomic recovery actions for the most common pre-talk failures. Each row is one command you can paste.
+
+| Symptom | Recovery |
+|---|---|
+| Aspire stuck / won't start | `bash src/cleanup-aspire.sh` then `aspire run` |
+| Build fails CS0009 / corrupt ref DLL | `dotnet build-server shutdown; Remove-Item -Recurse -Force src\*\obj, src\*\bin; dotnet build src\ZavaAppHost\ZavaAppHost.csproj` |
+| Build permission error (Linux/macOS) | `./infra/fix_permissions.sh` |
+| Agent auth fails | `az account show` → if wrong tenant: `az login --tenant <tenant-id>` |
+| Demo 2 running >10 min | Open Store → **Settings** → switch to "MAF - Local Agents" (30–60% faster) |
+| Foundry HTTP 400 invalid_payload / missing input | Confirm latest `git pull` (sanitizer + entry-point adapter must be in place) |
+
+If none of these apply, see `docs/03.HowToRunDemoLocally.md` Troubleshooting.
+
 Fallback & recording guidance
 
 - If a live demo fails (service doesn't start, index not ready, or external resource is inaccessible) — play the recorded demo clip for that segment and mark the runbook with the issue.

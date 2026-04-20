@@ -1,3 +1,5 @@
+> ⚠️ **DEPRECATED.** The automated console app described in [02.NeededCloudResources.md → Step 4](./02.NeededCloudResources.md#4-create-agents-using-the-console-application) is the canonical agent-deployment path for AI Tour 2026 BRK445. This document is retained for reference only — do **not** use it for first-time setup.
+
 # Manual Agent Deployment Guide
 
 This guide provides step-by-step instructions for manually creating agents in Microsoft Foundry without using the automated console application. Follow these steps if you prefer a manual approach or need to understand the deployment process in detail.
