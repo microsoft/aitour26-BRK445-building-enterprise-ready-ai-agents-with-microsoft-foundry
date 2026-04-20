@@ -9,3 +9,6 @@
 ## Learnings
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
+
+### 2026-04-20: Aspire CLI Install Standardization
+- **Fact:** Aspire CLI install replaced `dotnet workload install aspire` — the workload command is obsolete. Official install method via https://aspire.dev/get-started/install-cli/. All documentation and devcontainer config updated to reflect this standard.

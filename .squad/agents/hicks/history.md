@@ -9,3 +9,12 @@
 ## Learnings
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
+
+### 2026-04-20: Aspire CLI Install Migration
+- **Fact:** Aspire CLI install replaced `dotnet workload install aspire` — the workload command is obsolete. Official install script is at https://aspire.dev/install.sh (bash) or https://aspire.dev/install.ps1 (PowerShell).
+- **Files updated:**
+  - `docs/ARCHITECTURE_DEPLOYMENT.md` — replaced workload step with CLI install step (bash + PowerShell)
+  - `README.MD` — removed "Aspire workloads" terminology
+  - `session-delivery-resources/docs/Prerequisites.md` — added Aspire CLI to required tooling
+  - `session-delivery-resources/docs/01.Installation.md` — added Aspire CLI to prerequisites
+  - `.devcontainer/devcontainer.json` — updated comment to reference official docs (command was already correct)
