@@ -283,6 +283,10 @@ public class MultiAgentControllerMAFFoundry : ControllerBase
                     });
                 }
                 break;
+
+            default:
+                _logger.LogInformation("Workflow event: {EventType}", evt.GetType().Name);
+                break;
         }
     }
 
