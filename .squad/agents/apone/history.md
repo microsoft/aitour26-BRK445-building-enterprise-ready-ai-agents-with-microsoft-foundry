@@ -22,4 +22,5 @@ I am the speaker's first line of defense. Before a presenter walks on stage, the
 
 ## Learnings
 
-(Empty — first session.)
+### 2026-04-20: Speaker Path Audit → Documentation Improvements (Lambert)
+Lambert acted on findings from speaker-path audit: brand rename (Azure AI Foundry → Microsoft Foundry) + doc nav links (prev/next footers) + console-app pointer added to Installation docs.

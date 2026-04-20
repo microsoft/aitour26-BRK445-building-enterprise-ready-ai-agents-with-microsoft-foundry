@@ -25,3 +25,7 @@ See also:
 
 - `./02.NeededCloudResources.md` — instructions to create the Microsoft Foundry project, models and agents used by the demos.
 - `./03.HowToRunDemoLocally.md` — step-by-step instructions to build and run the demo locally.
+
+---
+
+**Navigation:** [🏠 Session Delivery Resources](../readme.md) | [Next: Installation ➡](./01.Installation.md)

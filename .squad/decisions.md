@@ -94,6 +94,38 @@ These methods are **core** to agent instantiation in `ZavaMAFLocal/MAFLocalAgent
 
 **Upgrade Path:** Blocked until MAF 1.1.0 migration docs published. When upgrade becomes viable, upgrade all packages together to same stamp.
 
+### Brand Rename to "Microsoft Foundry" + Sequential Doc Navigation (2026-04-20)
+
+**Author:** Lambert (DevRel / Presenter Enablement)  
+**Status:** Active  
+**Scope:** Documentation
+
+**Context:** Presenter walkthrough revealed two gaps: (1) "Azure AI Foundry" needed brand rename to "Microsoft Foundry" across docs, (2) sequential setup docs lacked prev/next navigation and console-app instructions weren't discoverable.
+
+**Decisions:**
+
+1. **Brand Rename Rule** — Update product references in narrative text; preserve code identifiers, paths, and URLs.
+   - Replace "Azure AI Foundry" / "AI Foundry" → "Microsoft Foundry" (product text only)
+   - DO NOT apply to repo names, code vars, URLs, Bicep types
+   - Files: README.MD (2), 02.NeededCloudResources.md (2), 03.HowToRunDemoLocally.md (2), ManualAgentDeployment.md (5), 01.Installation.md (1) = 12 total replacements
+
+2. **Sequential Docs Navigation Footer** — Link prev/next across Prerequisites → 01 → 02 → 03 sequence
+   - Prerequisites.md: Next-only
+   - 01–03: Full prev/next/home
+   - ManualAgentDeployment.md: Back-link only (branches off, no forward)
+   - Files: All 5 docs updated
+
+3. **Console App Discoverability** — Add forward pointer in 01.Installation.md Architecture section
+   - Forward pointer: "You'll run this console app as part of [Step 02: Create agents](./02.NeededCloudResources.md#4-create-agents-using-the-console-application)"
+   - session-delivery-resources/readme.md: Added Installation row; updated Cloud Resources description
+   - Anchor verified in 02.NeededCloudResources.md
+
+**Rationale:** Docs speak to presenters (narrative) not compilers (code). Explicit forward pointers + navigation reduce presenter friction. Product name in text should reflect current branding.
+
+**Verification:** ✅ No "Azure AI Foundry" product strings remain in docs (code identifiers excluded); all nav blocks present and linked; forward pointer validated; index updated.
+
+**Reusability:** These patterns apply to any future doc rebrand or multi-step tutorial.
+
 ## Governance
 
 - All meaningful changes require team consensus

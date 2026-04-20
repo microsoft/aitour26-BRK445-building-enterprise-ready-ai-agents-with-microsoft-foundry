@@ -16,7 +16,8 @@ Prior to delivering the workshop please:
 | Full Session Recording | [Recording CodeSpaces](https://youtu.be/ReWkkXbnF7I) | External | Full train-the-trainer recorded session |
 | Demo source code | [`/src` demo source](../src) | Internal | Demo source code used in the live demos |
 | Prerequisites | [`Prerequisites`](./docs/Prerequisites.md) | Internal | Tooling and access required to run the demos |
-| Cloud Resources | [`Needed Cloud Resources`](./docs/02.NeededCloudResources.md) | Internal | Cloud resources required to run the demos |
+| Installation | [`Installation`](./docs/01.Installation.md) | Internal | Prepare environment and architecture overview |
+| Cloud Resources | [`Needed Cloud Resources`](./docs/02.NeededCloudResources.md) | Internal | Create cloud resources and deploy agents via console app |
 | How to run demo locally | [`03.HowToRunDemoLocally`](./docs/03.HowToRunDemoLocally.md) | Internal | Step-by-step instructions to build and run the demo locally |
 | How to setup demo environment using CodeSpaces | [SetupCodespaces](https://aka.ms/AAyd4kq) | External | Step-by-step instructions to run the demo using codespaces |
 
