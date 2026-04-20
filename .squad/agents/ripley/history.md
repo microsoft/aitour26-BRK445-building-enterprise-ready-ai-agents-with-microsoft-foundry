@@ -12,3 +12,6 @@
 
 ### 2026-04-20: Aspire CLI Install Standardization
 - **Fact:** Aspire CLI install replaced `dotnet workload install aspire` — the workload command is obsolete. Official install method via https://aspire.dev/get-started/install-cli/. All documentation and devcontainer config updated to reflect this standard.
+
+### 2026-04-20: Aspire Package Upgrade to 13.2.x
+- **Fact:** Repo now on Aspire 13.2.x, ready for Foundry backend testing (Hicks).
