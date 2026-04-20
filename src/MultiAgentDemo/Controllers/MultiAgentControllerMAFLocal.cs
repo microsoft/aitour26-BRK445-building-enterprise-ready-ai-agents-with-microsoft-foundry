@@ -278,12 +278,12 @@ public class MultiAgentControllerMAFLocal : ControllerBase
                 if (updateEvent.ExecutorId != lastExecutorId)
                 {
                     lastExecutorId = updateEvent.ExecutorId;
-                    _logger.LogDebug("ExecutorId changed to: {ExecutorId}", updateEvent.ExecutorId);
+                    _logger.LogInformation("Workflow step → executor: {ExecutorId}", updateEvent.ExecutorId);
                 }
                 break;
 
             case WorkflowOutputEvent outputEvent:
-                _logger.LogDebug("WorkflowOutput - SourceId: {SourceId}", outputEvent.SourceId);
+                _logger.LogInformation("Workflow output received from: {SourceId}", outputEvent.SourceId);
                 var messages = outputEvent.As<List<ChatMessage>>() ?? [];
 
                 foreach (var message in messages)
