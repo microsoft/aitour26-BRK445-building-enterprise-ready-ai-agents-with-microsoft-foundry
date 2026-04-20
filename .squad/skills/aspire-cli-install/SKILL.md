@@ -2,8 +2,8 @@
 name: "aspire-cli-install"
 description: "Migrating .NET Aspire repos from workload install to CLI script install"
 domain: "aspire, dotnet, devops"
-confidence: "medium"
-source: "earned (verified against https://aspire.dev/get-started/install-cli/ on 2026-04-20)"
+confidence: "high"
+source: "earned (verified against https://aspire.dev/get-started/install-cli/ on 2026-04-20; package upgrade to 13.2.2 validated)"
 ---
 
 ## Context
