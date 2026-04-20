@@ -25,11 +25,13 @@
     <Project Path="LocationService/LocationService.csproj" />
     <Project Path="MatchmakingService/MatchmakingService.csproj" />
     <Project Path="NavigationService/NavigationService.csproj" />
-    <Project Path="ProductSearchService/ProductSearchService.csproj" Id="ddec019a-fde1-4ac3-862b-dffa4d38efbe" />
+    <Project Path="ProductSearchService/ProductSearchService.csproj"
+      Id="ddec019a-fde1-4ac3-862b-dffa4d38efbe" />
     <Project Path="ToolReasoningService/ToolReasoningService.csproj" />
   </Folder>
   <Folder Name="/6 MAF/">
-    <Project Path="ZavaMAFAIFoundry/ZavaMAFAIFoundry.csproj" Id="bb402c65-425c-4f7a-8479-bce52030f654" />
+    <Project Path="ZavaMAFAIFoundry/ZavaMAFAIFoundry.csproj"
+      Id="bb402c65-425c-4f7a-8479-bce52030f654" />
     <Project Path="ZavaMAFFoundry/ZavaMAFFoundry.csproj" Id="cedf7ed7-47e5-4733-a184-fe36eeb23aeb" />
     <Project Path="ZavaMAFLocal/ZavaMAFLocal.csproj" />
   </Folder>
@@ -43,5 +45,8 @@
     <Project Path="Store.Tests/Store.Tests.csproj" />
     <Project Path="ZavaMAFFoundry.Tests/ZavaMAFFoundry.Tests.csproj" />
     <Project Path="ZavaMAFLocal.Tests/ZavaMAFLocal.Tests.csproj" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path="Directory.Packages.props" />
   </Folder>
 </Solution>

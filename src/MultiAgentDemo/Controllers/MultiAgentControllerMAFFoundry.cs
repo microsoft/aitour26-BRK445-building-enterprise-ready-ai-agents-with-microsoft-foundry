@@ -1,10 +1,10 @@
+#pragma warning disable MAAIW001
 using Microsoft.Agents.AI;
 using ZavaAgentsMetadata;
 using Microsoft.Agents.AI.Workflows;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.AI;
 using SharedEntities;
-using System.Text;
 
 namespace MultiAgentDemo.Controllers;
 
@@ -14,19 +14,10 @@ namespace MultiAgentDemo.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/multiagent/maf_foundry")]  // Using constant AgentMetadata.FrameworkIdentifiers.MafFoundry
-public class MultiAgentControllerMAFFoundry : ControllerBase
+public class MultiAgentControllerMAFFoundry(
+    ILogger<MultiAgentControllerMAFFoundry> logger,
+    IServiceProvider serviceProvider) : ControllerBase
 {
-    private readonly ILogger<MultiAgentControllerMAFFoundry> _logger;
-    private readonly IServiceProvider _serviceProvider;
-
-    public MultiAgentControllerMAFFoundry(
-        ILogger<MultiAgentControllerMAFFoundry> logger,
-        IServiceProvider serviceProvider)
-    {
-        _logger = logger;
-        _serviceProvider = serviceProvider;
-    }
-
     /// <summary>
     /// Routes to the appropriate orchestration pattern based on request type.
     /// </summary>
@@ -38,7 +29,7 @@ public class MultiAgentControllerMAFFoundry : ControllerBase
             return BadRequest("Request body is required and must include a ProductQuery.");
         }
 
-        _logger.LogInformation(
+        logger.LogInformation(
             "Starting {OrchestrationTypeName} orchestration for query: {ProductQuery} using Microsoft Agent Framework (Foundry)",
             request.Orchestration, request.ProductQuery);
 
@@ -56,7 +47,7 @@ public class MultiAgentControllerMAFFoundry : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error in {OrchestrationTypeName} orchestration using Microsoft Agent Framework (Foundry)", request.Orchestration);
+            logger.LogError(ex, "Error in {OrchestrationTypeName} orchestration using Microsoft Agent Framework (Foundry)", request.Orchestration);
             return StatusCode(500, "An error occurred during orchestration processing.");
         }
     }
@@ -72,16 +63,16 @@ public class MultiAgentControllerMAFFoundry : ControllerBase
             return BadRequest("Request body is required and must include a ProductQuery.");
         }
 
-        _logger.LogInformation("Starting sequential workflow for query: {ProductQuery}", request.ProductQuery);
+        logger.LogInformation("Starting sequential workflow for query: {ProductQuery}", request.ProductQuery);
 
         try
         {
-            var agents = GetAgents();
+            var (ProductSearch, ProductMatchmaking, LocationService, Navigation) = GetAgents();
             var workflow = AgentWorkflowBuilder.BuildSequential([
-                agents.ProductSearch,
-                agents.ProductMatchmaking,
-                agents.LocationService,
-                agents.Navigation
+                ProductSearch,
+                ProductMatchmaking,
+                LocationService,
+                Navigation
             ]);
 
             var workflowResponse = await RunWorkflowAsync(request, workflow);
@@ -89,7 +80,7 @@ public class MultiAgentControllerMAFFoundry : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error in sequential workflow");
+            logger.LogError(ex, "Error in sequential workflow");
             return StatusCode(500, "An error occurred during sequential workflow processing.");
         }
     }
@@ -105,16 +96,16 @@ public class MultiAgentControllerMAFFoundry : ControllerBase
             return BadRequest("Request body is required and must include a ProductQuery.");
         }
 
-        _logger.LogInformation("Starting concurrent workflow for query: {ProductQuery}", request.ProductQuery);
+        logger.LogInformation("Starting concurrent workflow for query: {ProductQuery}", request.ProductQuery);
 
         try
         {
-            var agents = GetAgents();
+            var (ProductSearch, ProductMatchmaking, LocationService, Navigation) = GetAgents();
             var workflow = AgentWorkflowBuilder.BuildConcurrent([
-                agents.ProductSearch,
-                agents.ProductMatchmaking,
-                agents.LocationService,
-                agents.Navigation
+                ProductSearch,
+                ProductMatchmaking,
+                LocationService,
+                Navigation
             ]);
 
             var workflowResponse = await RunWorkflowAsync(request, workflow);
@@ -122,7 +113,7 @@ public class MultiAgentControllerMAFFoundry : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error in concurrent workflow");
+            logger.LogError(ex, "Error in concurrent workflow");
             return StatusCode(500, "An error occurred during concurrent workflow processing.");
         }
     }
@@ -138,15 +129,15 @@ public class MultiAgentControllerMAFFoundry : ControllerBase
             return BadRequest("Request body is required and must include a ProductQuery.");
         }
 
-        _logger.LogInformation("Starting handoff workflow with branching logic for query: {ProductQuery}", request.ProductQuery);
+        logger.LogInformation("Starting handoff workflow with branching logic for query: {ProductQuery}", request.ProductQuery);
 
         try
         {
-            var agents = GetAgents();
-            var workflow = AgentWorkflowBuilder.CreateHandoffBuilderWith(agents.ProductSearch)
-                .WithHandoff(agents.ProductSearch, agents.ProductMatchmaking)
-                .WithHandoff(agents.ProductMatchmaking, agents.LocationService)
-                .WithHandoff(agents.LocationService, agents.Navigation)
+            var (ProductSearch, ProductMatchmaking, LocationService, Navigation) = GetAgents();
+            var workflow = AgentWorkflowBuilder.CreateHandoffBuilderWith(ProductSearch)
+                .WithHandoff(ProductSearch, ProductMatchmaking)
+                .WithHandoff(ProductMatchmaking, LocationService)
+                .WithHandoff(LocationService, Navigation)
                 .Build();
 
             var workflowResponse = await RunWorkflowAsync(request, workflow);
@@ -154,7 +145,7 @@ public class MultiAgentControllerMAFFoundry : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error in handoff workflow");
+            logger.LogError(ex, "Error in handoff workflow");
             return StatusCode(500, "An error occurred during handoff workflow processing.");
         }
     }
@@ -170,17 +161,17 @@ public class MultiAgentControllerMAFFoundry : ControllerBase
             return BadRequest("Request body is required and must include a ProductQuery.");
         }
 
-        _logger.LogInformation("Starting group chat workflow for query: {ProductQuery}", request.ProductQuery);
+        logger.LogInformation("Starting group chat workflow for query: {ProductQuery}", request.ProductQuery);
 
         try
         {
-            var agents = GetAgents();
+            var (ProductSearch, ProductMatchmaking, LocationService, Navigation) = GetAgents();
             var agentList = new List<AIAgent>
             {
-                agents.ProductSearch,
-                agents.ProductMatchmaking,
-                agents.LocationService,
-                agents.Navigation
+                ProductSearch,
+                ProductMatchmaking,
+                LocationService,
+                Navigation
             };
 
             var workflow = AgentWorkflowBuilder.CreateGroupChatBuilderWith(
@@ -193,7 +184,7 @@ public class MultiAgentControllerMAFFoundry : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error in group chat workflow");
+            logger.LogError(ex, "Error in group chat workflow");
             return StatusCode(500, "An error occurred during group chat workflow processing.");
         }
     }
@@ -204,7 +195,7 @@ public class MultiAgentControllerMAFFoundry : ControllerBase
     [HttpPost("assist/magentic")]
     public async Task<ActionResult<MultiAgentResponse>> AssistMagenticAsync([FromBody] MultiAgentRequest? request)
     {
-        _logger.LogInformation("MagenticOne workflow requested for query: {ProductQuery}", request?.ProductQuery);
+        logger.LogInformation("MagenticOne workflow requested for query: {ProductQuery}", request?.ProductQuery);
 
         return StatusCode(501, 
             "The MagenticOne workflow is not yet implemented in the MAF Foundry framework. " +
@@ -220,7 +211,7 @@ public class MultiAgentControllerMAFFoundry : ControllerBase
         var steps = new List<AgentStep>();
         string? lastExecutorId = null;
 
-        var run = await InProcessExecution.StreamAsync(workflow, request.ProductQuery);
+        var run = await InProcessExecution.OpenStreamingAsync(workflow, request.ProductQuery);
         await run.TrySendMessageAsync(new TurnToken(emitEvents: true));
 
         await foreach (var evt in run.WatchStreamAsync().ConfigureAwait(false))
@@ -229,19 +220,19 @@ public class MultiAgentControllerMAFFoundry : ControllerBase
         }
 
         var mermaidChart = workflow.ToMermaidString();
-        var agents = GetAgents();
+        var (_, ProductMatchmaking, _, Navigation) = GetAgents();
         
         var alternatives = await StepsProcessor.GetProductAlternativesFromStepsAsync(
-            steps, agents.ProductMatchmaking, _logger);
+            steps, ProductMatchmaking, logger);
         var navigationInstructions = await StepsProcessor.GenerateNavigationInstructionsAsync(
-            steps, agents.Navigation, request.Location, request.ProductQuery, _logger);
+            steps, Navigation, request.Location, request.ProductQuery, logger);
 
         return new MultiAgentResponse
         {
             OrchestrationId = orchestrationId,
             OrchestationType = request.Orchestration,
             OrchestrationDescription = GetOrchestrationDescription(request.Orchestration),
-            Steps = steps.ToArray(),
+            Steps = [.. steps],
             MermaidWorkflowRepresentation = mermaidChart,
             Alternatives = alternatives,
             NavigationInstructions = navigationInstructions
@@ -259,16 +250,16 @@ public class MultiAgentControllerMAFFoundry : ControllerBase
     {
         switch (evt)
         {
-            case AgentRunUpdateEvent updateEvent:
+            case AgentResponseUpdateEvent updateEvent:
                 if (updateEvent.ExecutorId != lastExecutorId)
                 {
                     lastExecutorId = updateEvent.ExecutorId;
-                    _logger.LogDebug("ExecutorId changed to: {ExecutorId}", updateEvent.ExecutorId);
+                    logger.LogDebug("ExecutorId changed to: {ExecutorId}", updateEvent.ExecutorId);
                 }
                 break;
 
             case WorkflowOutputEvent outputEvent:
-                _logger.LogDebug("WorkflowOutput - SourceId: {SourceId}", outputEvent.SourceId);
+                logger.LogDebug("WorkflowOutput - SourceId: {SourceId}", outputEvent.ExecutorId);
                 var messages = outputEvent.As<List<ChatMessage>>() ?? [];
                 
                 foreach (var message in messages)
@@ -292,13 +283,13 @@ public class MultiAgentControllerMAFFoundry : ControllerBase
     private (AIAgent ProductSearch, AIAgent ProductMatchmaking, AIAgent LocationService, AIAgent Navigation) GetAgents()
     {
         return (
-            ProductSearch: _serviceProvider.GetRequiredKeyedService<AIAgent>(
+            ProductSearch: serviceProvider.GetRequiredKeyedService<AIAgent>(
                 AgentMetadata.GetAgentName(AgentType.ProductSearchAgent)),
-            ProductMatchmaking: _serviceProvider.GetRequiredKeyedService<AIAgent>(
+            ProductMatchmaking: serviceProvider.GetRequiredKeyedService<AIAgent>(
                 AgentMetadata.GetAgentName(AgentType.ProductMatchmakingAgent)),
-            LocationService: _serviceProvider.GetRequiredKeyedService<AIAgent>(
+            LocationService: serviceProvider.GetRequiredKeyedService<AIAgent>(
                 AgentMetadata.GetAgentName(AgentType.LocationServiceAgent)),
-            Navigation: _serviceProvider.GetRequiredKeyedService<AIAgent>(
+            Navigation: serviceProvider.GetRequiredKeyedService<AIAgent>(
                 AgentMetadata.GetAgentName(AgentType.NavigationAgent))
         );
     }
@@ -311,14 +302,14 @@ public class MultiAgentControllerMAFFoundry : ControllerBase
         if (string.IsNullOrEmpty(agentId))
             return "Unknown Agent";
 
-        var agents = GetAgents();
+        var (ProductSearch, ProductMatchmaking, LocationService, Navigation) = GetAgents();
         
         return agentId switch
         {
-            _ when agentId == agents.LocationService.Id => "Location Service Agent",
-            _ when agentId == agents.Navigation.Id => "Navigation Agent",
-            _ when agentId == agents.ProductMatchmaking.Id => "Product Matchmaking Agent",
-            _ when agentId == agents.ProductSearch.Id => "Product Search Agent",
+            _ when agentId == LocationService.Id => "Location Service Agent",
+            _ when agentId == Navigation.Id => "Navigation Agent",
+            _ when agentId == ProductMatchmaking.Id => "Product Matchmaking Agent",
+            _ when agentId == ProductSearch.Id => "Product Search Agent",
             _ => agentId
         };
     }

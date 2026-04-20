@@ -2,6 +2,7 @@
 
 using Azure.AI.OpenAI;
 using Azure.AI.Projects;
+using Azure.AI.Projects.Agents;
 using Azure.Core;
 using Azure.Identity;
 using Microsoft.Agents.AI;
@@ -23,9 +24,10 @@ public class MAFFoundryAgentProvider
 {
     private readonly AIProjectClient _projectClient;
     private readonly IConfiguration _configuration;
-    private readonly string _tenantId;
-    public MAFFoundryAgentProvider(string microsoftFoundryProjectEndpoint, IConfiguration configuration, string tenantId = "")
+    private readonly string? _tenantId;
+    public MAFFoundryAgentProvider(string? microsoftFoundryProjectEndpoint, IConfiguration configuration, string? tenantId = "")
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(microsoftFoundryProjectEndpoint, nameof(microsoftFoundryProjectEndpoint));
         _configuration = configuration;
         _tenantId = tenantId;
 
@@ -39,43 +41,48 @@ public class MAFFoundryAgentProvider
     }
 
     /// <summary>
-    /// Gets an AI agent by its agent ID from Microsoft Foundry (synchronous).
+    /// Gets an AI agent by its agent ID from Microsoft AI Foundry (synchronous).
     /// </summary>
-    public AIAgent GetAIAgent(string agentName, List<AITool> tools = null)
+    public AIAgent GetAIAgent(string agentId, List<AITool>? tools = null)
     {
-        if (string.IsNullOrWhiteSpace(agentName))
+        if (string.IsNullOrWhiteSpace(agentId))
         {
-            throw new ArgumentException("Agent Name cannot be null or empty", nameof(agentName));
+            throw new ArgumentException("Agent Name cannot be null or empty", nameof(agentId));
         }
 
-        return _projectClient.GetAIAgent(name: agentName, tools: tools);
+        AgentRecord agentRecord = _projectClient.Agents.GetAgent(agentName: agentId);
+        return _projectClient.AsAIAgent(agentRecord, tools);
     }
 
-    public AIAgent GetOrCreateAIAgent(string agentName,
+    public AIAgent GetOrCreateAIAgent(
+        string agentId,
+        string agentName = "",
         string model = "",
-        string agentInstructions = "", List<AITool> tools = null)
+        string agentInstructions = "",
+        List<AITool>? tools = null)
     {
-        if (string.IsNullOrWhiteSpace(agentName))
-        {
-            throw new ArgumentException("Agent Name cannot be null or empty", nameof(agentName));
-        }
-        AIAgent agent = null;
+        ArgumentException.ThrowIfNullOrEmpty(agentId, nameof(agentId));
+        ArgumentException.ThrowIfNullOrWhiteSpace(agentName, nameof(agentName));
+        ArgumentException.ThrowIfNullOrWhiteSpace(model, nameof(model));
 
         try
         {
-            agent = _projectClient.GetAIAgent(name: agentName, tools: tools);
+            AgentRecord agentRecord = _projectClient.Agents.GetAgent(agentName: agentId);
+            return _projectClient.AsAIAgent(agentRecord, tools);
         }
         catch
         {
         }
 
-        agent ??= _projectClient.CreateAIAgent(
-                name: agentName,
-                model: model,
-                instructions: agentInstructions,
-                tools: tools);
+        var agentVersion = _projectClient.Agents.CreateAgentVersion(
+                agentName,
+                new AgentVersionCreationOptions(
+                    new PromptAgentDefinition(model: model)
+                    {
+                        Instructions = "You are good at telling jokes.",
+                    }));
 
-        return agent;
+        return _projectClient.AsAIAgent(agentVersion, tools);
     }
 
     public IChatClient GetChatClient(string deploymentName = "")
@@ -225,7 +232,8 @@ public static class MAFFoundryAgentExtensions
             // Registration logic for each agent would go here if needed
             builder.AddAIAgent(agentName, (sp, key) =>
             {
-                return projectClient.GetAIAgent(agentName);
+                var agentRecord = projectClient.Agents.GetAgent(agentName);
+                return projectClient.AsAIAgent(agentRecord);
             });
 
             logger?.LogDebug($"Registered MAF Foundry agent: {agentName} as keyed singleton");

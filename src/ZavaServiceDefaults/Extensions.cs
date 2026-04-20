@@ -77,7 +77,10 @@ namespace Microsoft.Extensions.Hosting
                 })
                 .WithTracing(tracing =>
                 {
-                    tracing.AddAspNetCoreInstrumentation()
+                    tracing.AddAspNetCoreInstrumentation(o =>
+                    {
+                        o.EnableAspNetCoreSignalRSupport = false;
+                    })
                         // Uncomment the following line to enable gRPC instrumentation (requires the OpenTelemetry.Instrumentation.GrpcNetClient package)
                         //.AddGrpcClientInstrumentation()
                         .AddHttpClientInstrumentation()

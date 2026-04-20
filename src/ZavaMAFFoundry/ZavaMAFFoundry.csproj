@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<TargetFramework>net10.0</TargetFramework>
@@ -7,16 +7,16 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Microsoft.Agents.AI" Version="1.0.0-preview.251219.1" />
-		<PackageReference Include="Microsoft.Agents.AI.AzureAI" Version="1.0.0-preview.251219.1" />
-		<PackageReference Include="Microsoft.Agents.AI.Abstractions" Version="1.0.0-preview.251219.1" />
-		<PackageReference Include="Microsoft.Agents.AI.Hosting" Version="1.0.0-preview.251219.1" />
-		<PackageReference Include="Microsoft.Agents.AI.Hosting.OpenAI" Version="1.0.0-alpha.251219.1" />
-		<PackageReference Include="Azure.Identity" Version="1.18.0-beta.2" />
-		<PackageReference Include="System.Memory.Data" Version="10.0.1" />
+		<PackageReference Include="Microsoft.Agents.AI" />
+		<PackageReference Include="Microsoft.Agents.AI.AzureAI" />
+		<PackageReference Include="Microsoft.Agents.AI.Abstractions" />
+		<PackageReference Include="Microsoft.Agents.AI.Hosting" />
+		<PackageReference Include="Microsoft.Agents.AI.Hosting.OpenAI" />
+		<PackageReference Include="Azure.Identity" />
+		<PackageReference Include="System.Memory.Data" />
 
 
-		<PackageReference Include="Azure.AI.OpenAI" Version="2.8.0-beta.1" />
+		<PackageReference Include="Azure.AI.OpenAI" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -1,3 +1,4 @@
+#pragma warning disable MAAIW001
 using Microsoft.Agents.AI;
 using ZavaAgentsMetadata;
 using Microsoft.Agents.AI.Workflows;
@@ -5,7 +6,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.AI;
 using SharedEntities;
 using ZavaMAFLocal;
-using System.Diagnostics.Tracing;
 
 namespace MultiAgentDemo.Controllers;
 
@@ -236,7 +236,7 @@ public class MultiAgentControllerMAFLocal : ControllerBase
         var steps = new List<AgentStep>();
         string? lastExecutorId = null;
 
-        var run = await InProcessExecution.StreamAsync(workflow, request.ProductQuery);
+        var run = await InProcessExecution.OpenStreamingAsync(workflow, request.ProductQuery);
         await run.TrySendMessageAsync(new TurnToken(emitEvents: true));
 
         await foreach (var evt in run.WatchStreamAsync().ConfigureAwait(false))
@@ -274,7 +274,7 @@ public class MultiAgentControllerMAFLocal : ControllerBase
     {
         switch (evt)
         {
-            case AgentRunUpdateEvent updateEvent:
+            case AgentResponseUpdateEvent updateEvent:
                 if (updateEvent.ExecutorId != lastExecutorId)
                 {
                     lastExecutorId = updateEvent.ExecutorId;

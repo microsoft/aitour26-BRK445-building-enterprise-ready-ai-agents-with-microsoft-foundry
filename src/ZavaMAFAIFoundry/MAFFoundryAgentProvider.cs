@@ -1,4 +1,5 @@
-﻿using Azure.AI.Agents.Persistent;
+﻿using Azure.AI.Projects;
+using Azure.AI.Projects.Agents;
 using Azure.Identity;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
@@ -11,66 +12,68 @@ namespace ZavaMAFAIFoundry;
 /// </summary>
 public class MAFFoundryAgentProvider
 {
-    private readonly PersistentAgentsClient _persistentAgentClient;
+    private readonly AIProjectClient _persistentAgentClient;
     public MAFFoundryAgentProvider(
-        string aiFoundryProjectEndpoint, 
+        string aiFoundryProjectEndpoint,
         string tenantId = "")
     {
         var credentialOptions = new DefaultAzureCredentialOptions();
         if (!string.IsNullOrEmpty(tenantId))
         {
             credentialOptions = new DefaultAzureCredentialOptions()
-            { TenantId = tenantId };
+            {
+                TenantId = tenantId
+            };
         }
         var tokenCredential = new DefaultAzureCredential(options: credentialOptions);
 
-        _persistentAgentClient = new PersistentAgentsClient(
-            aiFoundryProjectEndpoint!,
+        _persistentAgentClient = new AIProjectClient(
+            new Uri(aiFoundryProjectEndpoint),
             tokenCredential);
     }
 
     /// <summary>
     /// Gets an AI agent by its agent ID from Microsoft AI Foundry (synchronous).
     /// </summary>
-    public AIAgent GetAIAgent(string agentId, List<AITool> tools = null)
+    public AIAgent GetAIAgent(string agentId, List<AITool>? tools = null)
     {
         if (string.IsNullOrWhiteSpace(agentId))
         {
             throw new ArgumentException("Agent Name cannot be null or empty", nameof(agentId));
         }
 
-        ChatClientAgentOptions options = new();
-        options.ChatOptions.Tools = tools;
-
-        return _persistentAgentClient.GetAIAgent(agentId: agentId, options: options);
+        AgentRecord agentRecord = _persistentAgentClient.Agents.GetAgent(agentName: agentId);
+        return _persistentAgentClient.AsAIAgent(agentRecord, tools);
     }
 
-    public AIAgent GetOrCreateAIAgent(string agentId,
+    public AIAgent GetOrCreateAIAgent(
+        string agentId,
         string agentName = "",
         string model = "",
-        string agentInstructions = "", 
-        List<AITool> tools = null)
+        string agentInstructions = "",
+        List<AITool>? tools = null)
     {
-        if (string.IsNullOrWhiteSpace(agentId))
-        {
-            throw new ArgumentException("Agent ID cannot be null or empty", nameof(agentId));
-        }
-        AIAgent agent = null;
+        ArgumentException.ThrowIfNullOrEmpty(agentId, nameof(agentId));
+        ArgumentException.ThrowIfNullOrWhiteSpace(agentName, nameof(agentName));
+        ArgumentException.ThrowIfNullOrWhiteSpace(model, nameof(model));
+
         try
         {
-            ChatClientAgentOptions options = new();
-            options.ChatOptions.Tools = tools;
-            agent = _persistentAgentClient.GetAIAgent(agentId: agentId, options: options);
+            AgentRecord agentRecord = _persistentAgentClient.Agents.GetAgent(agentName: agentId);
+            return _persistentAgentClient.AsAIAgent(agentRecord, tools);
         }
         catch
         {
         }
 
-        agent ??= _persistentAgentClient.CreateAIAgent(
-                name: agentName,
-                model: model,
-                instructions: agentInstructions);
+        var agentVersion = _persistentAgentClient.Agents.CreateAgentVersion(
+                agentName,
+                new AgentVersionCreationOptions(
+                    new PromptAgentDefinition(model: model)
+                    {
+                        Instructions = "You are good at telling jokes.",
+                    }));
 
-        return agent;
+        return _persistentAgentClient.AsAIAgent(agentVersion, tools);
     }
 }

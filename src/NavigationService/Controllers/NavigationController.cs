@@ -114,8 +114,8 @@ public class NavigationController : ControllerBase
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var thread = _agentFxAgent.GetNewThread();
-        var response = await _agentFxAgent.RunAsync(prompt, thread);
+        var session = await _agentFxAgent.CreateSessionAsync();
+        var response = await _agentFxAgent.RunAsync(prompt, session);
         return response?.Text ?? string.Empty;
     }
 

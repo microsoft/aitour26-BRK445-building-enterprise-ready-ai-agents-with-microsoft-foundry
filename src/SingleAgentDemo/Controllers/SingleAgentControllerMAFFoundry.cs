@@ -26,7 +26,7 @@ public class SingleAgentControllerMAFFoundry : ControllerBase
     private readonly InventoryService _inventoryService;
     private readonly IConfiguration _config;
     private readonly List<AITool> _tools;
-        
+
     public SingleAgentControllerMAFFoundry(
         ILogger<SingleAgentControllerMAFFoundry> logger,
         IConfiguration config,
@@ -63,12 +63,13 @@ public class SingleAgentControllerMAFFoundry : ControllerBase
 
         // Get the agent from Microsoft Foundry
         _orchestratorAgent = foundryAgentProvider.GetOrCreateAIAgent(
-            agentName: agentName, 
-            model: chatDeploymentName, 
+            agentId: agentName,
+            agentName: agentName,
+            model: chatDeploymentName,
             agentInstructions: instructions,
             tools: _tools);
 
-        _logger.LogInformation($"SingleAgentControllerMAFFoundry initialized with Foundry agent '{agentName}' and {_tools.Count} MCP tools");
+        _logger.LogInformation("SingleAgentControllerMAFFoundry initialized with Foundry agent '{agentName}' and {toolsCount} MCP tools", agentName, _tools.Count);
     }
 
     /// <summary>
@@ -92,7 +93,7 @@ public class SingleAgentControllerMAFFoundry : ControllerBase
             _currentCustomerId = customerId;
 
             // Create thread and chat options with tools
-            var agentThread = _orchestratorAgent.GetNewThread();
+            var session = await _orchestratorAgent.CreateSessionAsync();
             //var chatOptions = new ChatOptions
             //{
             //    Tools = [.. _tools]
@@ -113,8 +114,8 @@ Provide a comprehensive analysis based on all tool results.";
             // Execute the agent with all tools
             var response = await _orchestratorAgent.RunAsync(
                 message: analysisPrompt,
-                thread: agentThread);
-                //, options: new ChatClientAgentRunOptions(chatOptions));
+                session: session);
+            //, options: new ChatClientAgentRunOptions(chatOptions));
 
             var result = response.Text;
 
@@ -130,7 +131,7 @@ Provide a comprehensive analysis based on all tool results.";
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error in analysis for customer {CustomerId} using MAF Foundry Agent with MCP Tools", customerId);
-            
+
             // Return fallback response on error
             return Ok(BuildFallbackResponse(prompt, customerId));
         }
@@ -174,7 +175,7 @@ Provide a comprehensive analysis based on all tool results.";
 
             _photoAnalysisResult = await _analyzePhotoService.AnalyzePhotoAsync(_currentImage, _currentPrompt);
             var duration = DateTime.UtcNow - startTime;
-            
+
             _logger.LogInformation(
                 "MCP Tool: PerformPhotoAnalysis completed in {Duration}ms. Detected {Count} materials",
                 duration.TotalMilliseconds, _photoAnalysisResult.DetectedMaterials.Length);
@@ -219,7 +220,7 @@ Provide a comprehensive analysis based on all tool results.";
 
             _customerInfo = await _customerInformationService.GetCustomerInformationAsync(customerIdToUse);
             var duration = DateTime.UtcNow - startTime;
-            
+
             _logger.LogInformation(
                 "MCP Tool: GetCustomerInformation completed in {Duration}ms. Customer has {Count} tools",
                 duration.TotalMilliseconds, _customerInfo.OwnedTools.Length);
@@ -274,7 +275,7 @@ Provide a comprehensive analysis based on all tool results.";
 
             _toolReasoningResult = await _toolReasoningService.GenerateReasoningAsync(reasoningRequest);
             var duration = DateTime.UtcNow - startTime;
-            
+
             _logger.LogInformation(
                 "MCP Tool: PerformToolReasoning completed in {Duration}ms, result length: {Length}",
                 duration.TotalMilliseconds, _toolReasoningResult.Length);
@@ -301,22 +302,22 @@ Provide a comprehensive analysis based on all tool results.";
         {
             // Parse tools from comma-separated string or extract from reasoning result
             var toolArray = tools.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            
+
             if (toolArray.Length == 0)
             {
                 // Extract tool names from reasoning result as fallback
                 toolArray = ["PAINT-ROLLER-9IN", "BRUSH-SET-3PC", "DROP-CLOTH-9X12"];
             }
 
-            var toolRecommendations = toolArray.Select(tool => new ToolRecommendation 
-            { 
+            var toolRecommendations = toolArray.Select(tool => new ToolRecommendation
+            {
                 Sku = tool,
-                Name = tool 
+                Name = tool
             }).ToArray();
 
             _inventoryResult = await _inventoryService.EnrichWithInventoryAsync(toolRecommendations);
             var duration = DateTime.UtcNow - startTime;
-            
+
             _logger.LogInformation(
                 "MCP Tool: PerformInventoryCheck completed in {Duration}ms. Checked {Count} tools",
                 duration.TotalMilliseconds, _inventoryResult.Length);
@@ -349,7 +350,7 @@ Provide a comprehensive analysis based on all tool results.";
         {
             Analysis = _photoAnalysisResult?.Description ?? "Photo analysis completed",
             ReusableTools = _customerInfo?.OwnedTools ?? ["hammer", "screwdriver"],
-            RecommendedTools = _inventoryResult ?? 
+            RecommendedTools = _inventoryResult ??
             [
                 new ToolRecommendation { Name = "Paint Roller", Sku = "PAINT-ROLLER-9IN", IsAvailable = true, Price = 12.99m, Description = "9-inch paint roller" },
                 new ToolRecommendation { Name = "Paint Brush Set", Sku = "BRUSH-SET-3PC", IsAvailable = true, Price = 24.99m, Description = "3-piece brush set" }

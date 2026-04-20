@@ -81,7 +81,8 @@ IMPORTANT:
 After calling all tools, provide a comprehensive summary including photo analysis, customer profile, recommended tools, and pricing information.";
 
         IChatClient chatClient = foundryAgentProvider.GetChatClient();
-        _orchestratorAgent = chatClient.CreateAIAgent(
+        _orchestratorAgent = new ChatClientAgent(
+            chatClient,
             name: "OrchestratorAgent",
             instructions: instructions, 
             description: "Orchestrates the analysis process using multiple tools.",
@@ -111,7 +112,7 @@ After calling all tools, provide a comprehensive summary including photo analysi
             _currentCustomerId = customerId;
 
             // Create thread and chat options with tools
-            var agentThread = _orchestratorAgent.GetNewThread();
+            var session = await _orchestratorAgent.CreateSessionAsync();
 
             var analysisPrompt = $@"Analyze the uploaded image for customer {customerId} with the task: {prompt}
 
@@ -128,7 +129,7 @@ Provide a comprehensive analysis based on all tool results.";
             // Execute the agent with all tools
             var response = await _orchestratorAgent.RunAsync(
                 message: analysisPrompt,
-                thread: agentThread);
+                session: session);
 
             var result = response.Text;
 

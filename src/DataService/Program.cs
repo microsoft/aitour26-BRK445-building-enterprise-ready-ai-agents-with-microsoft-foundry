@@ -1,4 +1,3 @@
-using Azure.Identity;
 using Microsoft.Extensions.AI;
 using DataService.Endpoints;
 using DataService.Memory;
@@ -31,11 +30,11 @@ builder.AddMAFFoundryAgents();
 // add memory context
 builder.Services.AddSingleton(sp =>
 {
-    var logger = sp.GetService<ILogger<Program>>();
+    var logger = sp.GetRequiredService<ILogger<Program>>();
     logger.LogInformation("Creating memory context");
-    return new MemoryContext(logger, 
-        sp.GetService<IChatClient>(), 
-        sp.GetService<IEmbeddingGenerator<string, Embedding<float>>>());
+    return new MemoryContext(logger,
+        sp.GetRequiredService<IChatClient>(),
+        sp.GetRequiredService<IEmbeddingGenerator<string, Embedding<float>>>());
 });
 
 // Add services to the container.

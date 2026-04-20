@@ -93,9 +93,7 @@ public static class MAFLocalAgentExtensions
             {
                 // create agent
                 var chatClient = sp.GetRequiredService<IChatClient>();
-                return chatClient.CreateAIAgent(
-                    name: agentName,
-                    instructions: instructions);
+                return new ChatClientAgent(chatClient, name: agentName, instructions: instructions);
             });
 
 
@@ -123,7 +121,7 @@ public static class MAFLocalAgentExtensions
         builder.AddWorkflow("SequentialWorkflow", (sp, key) =>
             {
                 var workFlowName = "SequentialWorkflow";
-                logger?.LogInformation($"Creating MAF Local workflow: {workFlowName} - Type: Sequential");
+                logger?.LogInformation("Creating MAF Local workflow: {workFlowName} - Type: Sequential", workFlowName);
                 // create agent
                 var localAgentProvider = sp.GetRequiredService<MAFLocalAgentProvider>();
                 var productSearchAgent = localAgentProvider.GetLocalAgentByName(AgentType.ProductSearchAgent);
@@ -145,7 +143,7 @@ public static class MAFLocalAgentExtensions
         {
             var workFlowName = "ConcurrentWorkflow";
 
-            logger?.LogInformation($"Creating MAF Local workflow: {workFlowName} - Type: Concurrent");
+            logger?.LogInformation("Creating MAF Local workflow: {workFlowName} - Type: Concurrent", workFlowName);
 
             // create agent
             var localAgentProvider = sp.GetRequiredService<MAFLocalAgentProvider>();

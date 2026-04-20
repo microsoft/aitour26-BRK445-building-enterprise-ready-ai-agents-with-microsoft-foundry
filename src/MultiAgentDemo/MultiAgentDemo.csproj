@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+<Project Sdk="Microsoft.NET.Sdk.Web">
 
 	<PropertyGroup>
 		<TargetFramework>net10.0</TargetFramework>
@@ -8,16 +8,16 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Aspire.Azure.AI.OpenAI" Version="13.2.2-preview.1.26207.2" />
-		<PackageReference Include="Microsoft.Agents.AI.Workflows" Version="1.0.0-preview.251219.1" />
-		<PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.1" />
-		<PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.0" />
+		<PackageReference Include="Aspire.Azure.AI.OpenAI" />
+		<PackageReference Include="Microsoft.Agents.AI.Workflows" />
+		<PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+		<PackageReference Include="Swashbuckle.AspNetCore" />
 		<!-- DevUI packages for agent debugging and visualization -->
-		<PackageReference Include="Microsoft.Agents.AI" Version="1.0.0-preview.251219.1" />
-		<PackageReference Include="Microsoft.Agents.AI.Abstractions" Version="1.0.0-preview.251219.1" />
-		<PackageReference Include="Microsoft.Agents.AI.DevUI" Version="1.0.0-preview.251219.1" />
-		<PackageReference Include="Microsoft.Agents.AI.Hosting" Version="1.0.0-preview.251219.1" />
-        <PackageReference Include="System.Memory.Data" Version="10.0.1" />
+		<PackageReference Include="Microsoft.Agents.AI" />
+		<PackageReference Include="Microsoft.Agents.AI.Abstractions" />
+		<PackageReference Include="Microsoft.Agents.AI.DevUI" />
+		<PackageReference Include="Microsoft.Agents.AI.Hosting" />
+        <PackageReference Include="System.Memory.Data" />
 	</ItemGroup>
 
 	<ItemGroup>
