@@ -44,3 +44,13 @@
 - **Suppression pattern (project scope):** Add `<NoWarn>$(NoWarn);CA2252</NoWarn>` to the .csproj. Allows clean builds without `#pragma` directives in every file.
 - **Alternative (file scope):** Use `#pragma warning disable CA2252` at file top (already present in `src/ZavaMAFFoundry/MAFFoundryAgentProvider.cs:1`).
 - **Usage:** Applied to `infra/Brk445-Console-DeployAgents.csproj` when bumping MAF packages to 1.0.0-preview.251219.1 (2026-04-20). Build clean with 0 errors.
+
+### Demo 2: MAF Event Logging for Hosted Sequential Workflows — 2026-04-20
+
+**Finding (Empirical):** MAF's AgentRunUpdateEvent does not change ExecutorId between hosted-agent sequential workflow steps. Only the first executor transition was logged across multiple Demo 2 runs.
+
+**Mitigation:** Default case in ProcessWorkflowEvent now logs all unhandled workflow event types via `evt.GetType().Name`, ensuring every workflow event surfaces in Aspire logs for live presenter visibility. Applied to MultiAgentControllerMAFFoundry.cs and MultiAgentControllerMAFLocal.cs.
+
+**Commit:** 4db8714 — "Demo 2: log all workflow event types for live visibility"
+
+**Follow-up:** Investigate whether ExecutorInvokedEvent / ExecutorCompletedEvent are emitted during hosted sequential workflows.

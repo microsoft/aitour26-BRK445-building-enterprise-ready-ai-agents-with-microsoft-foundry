@@ -50,3 +50,13 @@ These methods are core to `ZavaMAFLocal/MAFLocalAgentProvider.cs` (line 96) and 
 
 - MAF 1.1.0 breaking change: core agent instantiation methods removed/relocated (architectural shift, not rename)
 - **Infra alignment completed by Squad (2026-04-20):** `infra/Brk445-Console-DeployAgents.csproj` now on 1.0.0-preview.251219.1, matching src/ projects
+
+### Demo 2: MAF Event Logging for Hosted Sequential Workflows — 2026-04-20
+
+**Finding (Empirical):** MAF's AgentRunUpdateEvent does not change ExecutorId between hosted-agent sequential workflow steps. Only the first executor transition was logged across multiple Demo 2 runs.
+
+**Mitigation:** Default case in ProcessWorkflowEvent now logs all unhandled workflow event types via `evt.GetType().Name`, ensuring every workflow event surfaces in Aspire logs for live presenter visibility. Applied symmetrically to both MAFFoundry and MAFLocal controllers.
+
+**Commit:** 4db8714 — "Demo 2: log all workflow event types for live visibility"
+
+**Follow-up:** Investigate whether ExecutorInvokedEvent / ExecutorCompletedEvent are emitted during hosted sequential workflows.
