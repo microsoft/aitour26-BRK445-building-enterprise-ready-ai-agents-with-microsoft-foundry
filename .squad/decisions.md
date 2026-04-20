@@ -2,6 +2,79 @@
 
 ## Active Decisions
 
+### MAF Foundry Sequential Workflow — Hosted Hand-off Payload Sanitization (2026-04-20)
+
+**Author:** Hicks (Backend / Microservices)  
+**Status:** Active  
+**Scope:** `src/MultiAgentDemo/Controllers/MultiAgentControllerMAFFoundry.cs`
+
+**Context:** Demo 2 (Foundry mode → Sequential) failed on agent #2 with `HTTP 400 (invalid_payload)` from Foundry's `/responses` endpoint. Hosted Foundry agents (created with `HostedFileSearchTool` + `HostedCodeInterpreterTool`) receive strict validation: `function_call`, `tool_call`, `reasoning` items must be paired with their `*_output` siblings. `AgentWorkflowBuilder.BuildSequential` chains agents by passing the prior agent's full `List<ChatMessage>` as input to the next agent, which includes orphan items that poison the Foundry request.
+
+**Decision:** New `MAFFoundrySequentialBuilder.BuildSequentialForFoundry(IReadOnlyList<AIAgent>)` inserts a `BindAsExecutor<List<ChatMessage>, List<ChatMessage>>` sanitizer between every pair of hosted Foundry agents. The sanitizer collapses the prior output to a single plain-text `User` `ChatMessage`, dropping all tool/function/reasoning items. Only `MultiAgentControllerMAFFoundry.AssistSequentialAsync` uses this builder; Concurrent, Handoff, GroupChat remain unchanged.
+
+**Rationale:** Minimal, safe-by-construction solution that preserves demo narrative (still hosted Foundry agents end-to-end). MAF Local is unaffected because Azure OpenAI Chat-Completions tolerates orphan items; only the Responses API enforces strict pairing.
+
+**Files Changed:**
+- `src/MultiAgentDemo/Controllers/MAFFoundrySequentialBuilder.cs` (new)
+- `src/MultiAgentDemo/Controllers/MultiAgentControllerMAFFoundry.cs` (AssistSequentialAsync call site)
+
+**Verification:** ✅ Compile clean (0 errors, 0 warnings); pending Bruno's Aspire verification run.
+
+### Workflow Error Event Logging Strategy (2026-04-20)
+
+**Author:** Hicks (Backend / Microservices)  
+**Status:** Active
+
+**Context:** Demo 2 failed with `ExecutorFailedEvent` + `WorkflowErrorEvent` but exception detail didn't surface because the default case logged only `evt.GetType().Name`.
+
+**Decision:** Added explicit `case` arms for `ExecutorFailedEvent` and `WorkflowErrorEvent` in `ProcessWorkflowEvent` (both `MultiAgentControllerMAFFoundry` and `MultiAgentControllerMAFLocal`), logged at `LogError` level.
+
+**Property Mapping** (verified vs. MAF 1.0.0-preview.251219.1 XML doc):
+- `WorkflowEvent.Data` → contains object payload or `Exception` for error events
+- `ExecutorFailedEvent : ExecutorEvent` — ctor `(string executorId, Exception ex)` with exception in `Data`
+- `WorkflowErrorEvent : WorkflowEvent` — ctor `(Exception ex)` with exception in `Data`
+
+**Implementation Pattern:**
+```csharp
+var ex = failedEvent.Data as Exception;
+_logger.LogError(ex, "... | Message: {Message} | Inner: {Inner} | Detail: {Detail}",
+    ex?.Message ?? "(no exception)",
+    ex?.InnerException?.Message ?? "(none)",
+    ex?.ToString() ?? failedEvent.ToString());
+```
+
+Passing `Exception` as first arg ensures structured logging captures full stack trace separately; message template provides one-line summary in console. Falls back to `evt.ToString()` if shape changes.
+
+### Demo 2 Timing Expectations — Documented with Empirical Data (2026-04-20)
+
+**Author:** Lambert (DevRel / Presenter Enablement)  
+**Status:** Active  
+**Scope:** `session-delivery-resources/docs/03.HowToRunDemoLocally.md`
+
+**Context:** Presenter walkthrough revealed Demo 2 needed clear, empirically-backed timing guidance. Bruno measured live test runs.
+
+**Decision:** Expanded Demo 2 section (lines 114–134) to match Demo 1 depth:
+- **~8 minutes end-to-end** (normal, not a bug)
+- **Detailed breakdown table:** 4 hosted Foundry agents (~60–90s each) + 2 post-processing LLM calls (~60s each)
+- **Speaker tip callout:** Educates on executor-logging quirk (logs quiet after first transition), new "Workflow event: {EventType}" lines for visibility
+- **Troubleshooting hint:** Runs exceeding ~10 minutes indicate credential stalls or throttling
+- **MAF Local fallback:** 30–60% speedup option for time-constrained presentations
+
+**Rationale:** Foundry envelope overhead is dominant cost. Presenters needed reassurance that orchestration silence ≠ hang.
+
+**Verification:** ✅ Empirically measured; no changes to other sections.
+
+### Copilot Auto-Push Directive (2026-04-20)
+
+**Author:** Bruno Capuano (via Copilot)  
+**Status:** Active
+
+After every commit, always push to remote tracking branch (`git push`). No "commit but don't push" — always sync branch to origin.
+
+**Rationale:** User request — enables Bruno to pull from any machine.
+
+**Enforcement:** Scribe MUST include `git push` as final step after commit (step 6) in every spawn. Coordinator checks `git status` at end of each turn to verify nothing ahead of origin.
+
 ### Aspire Package Versioning Standard (2026-04-20)
 
 **Author:** Hicks (Backend / Microservices)  

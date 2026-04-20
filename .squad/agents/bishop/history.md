@@ -10,6 +10,11 @@
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
 
+### 2026-04-20: MAF Foundry Sequential Workflow — Hosted Hand-off Sanitization Pattern (Hicks)
+- **Skill:** `.squad/skills/maf-foundry-handoff/` — New `MAFFoundrySequentialBuilder` for Foundry-hosted sequential agent workflows
+- **Use case:** When chaining hosted Foundry agents, the Foundry `/responses` endpoint rejects orphan tool-call/function-call/reasoning items. Insert a `BindAsExecutor<List<ChatMessage>, List<ChatMessage>>` sanitizer between agent pairs to collapse prior output to single plain-text User message.
+- **Reusability:** Applicable to any future MAF-Foundry hosted-agent workflows requiring sequential orchestration. Pattern: sanitizer drops all non-text message items before next agent receives input.
+
 ### MAF Version Analysis — 2026-04-20
 
 **Current State:**
