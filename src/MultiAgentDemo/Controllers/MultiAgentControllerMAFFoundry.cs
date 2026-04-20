@@ -221,10 +221,28 @@ public class MultiAgentControllerMAFFoundry : ControllerBase
     /// <summary>
     /// Executes a workflow and processes the streaming events.
     /// </summary>
+    private const string OrchestratorIdentityBanner =
+        "🌐 Using MAF Foundry orchestrator (hosted Microsoft Foundry agents)";
+
     private async Task<MultiAgentResponse> RunWorkflowAsync(MultiAgentRequest request, Workflow workflow)
     {
         var orchestrationId = Guid.NewGuid().ToString();
-        var steps = new List<AgentStep>();
+        var startedAt = DateTime.UtcNow;
+        _logger.LogInformation(
+            "{Banner} | OrchestrationId={OrchestrationId} | Pattern={Orchestration}",
+            OrchestratorIdentityBanner, orchestrationId, request.Orchestration);
+
+        var steps = new List<AgentStep>
+        {
+            new()
+            {
+                Agent = "Orchestrator",
+                AgentId = "maf-foundry-orchestrator",
+                Action = $"Routing {request.Orchestration} request",
+                Result = OrchestratorIdentityBanner,
+                Timestamp = startedAt
+            }
+        };
         string? lastExecutorId = null;
 
         var run = await InProcessExecution.StreamAsync(workflow, request.ProductQuery);
