@@ -45,3 +45,14 @@ Bishop builds. I watch for drift. MAF ships preview packages on a rapid cadence 
 - **Status:** Repo remains on 1.0.0-preview.251219.1 until migration docs published or code is refactored.
 - **Implication:** Dietrich must track MAF 1.1.0 migration docs closely. Day-1 awareness: do not attempt upgrades without refactoring plan.
 - **Alignment action (completed 2026-04-20):** `infra/Brk445-Console-DeployAgents.csproj` bumped from 1.0.0-preview.251204.1 to 1.0.0-preview.251219.1 to match src/ projects. Both build targets now pass clean.
+
+### 2026-04-20: TurnToken Propagation Rule (Cross-cutting MAF orchestration)
+
+**Discovery:** Demo 2 executed in ~30ms instead of ~8 minutes because `TurnToken` was silently dropped by the input adapter and sanitizers. Without `TurnToken`, hosted Foundry agents skip API calls and return stub responses via `StepsProcessor` defaults.
+
+**Rule (applies to all MAF-touching agents):** 
+- Input adapters in orchestration chains MUST preserve `TurnToken`. `FunctionExecutor`-based adapters lose it (only handle `List<ChatMessage>` type). Use `ChatForwardingExecutor` or document the explicit `TurnToken` route.
+- Sanitizers between agent pairs MUST route `TurnToken` explicitly. Derive from `Executor` base, add `RouteBuilder` arm for `TurnToken`, forward downstream as-is.
+- If the workflow runs in <100ms instead of expected ~30–60s, first suspect: missing `TurnToken` propagation.
+
+**Reference:** Hicks' 2026-04-20 fix (commit ada9ecc, Orchestration Log `2026-04-20T16-24-21Z-hicks.md`, Skill `.squad/skills/maf-foundry-handoff/`).

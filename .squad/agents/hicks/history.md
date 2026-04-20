@@ -83,3 +83,14 @@
 - **Verification:** `dotnet build src/MultiAgentDemo/MultiAgentDemo.csproj -t:Compile` — 0 errors, 0 warnings.
 - **Visibility (regression-protection):** Both `MultiAgentControllerMAFFoundry.RunWorkflowAsync` and `MultiAgentControllerMAFLocal.RunWorkflowAsync` now prepend a synthetic `AgentStep` with `Agent = "Orchestrator"` whose `Result` is "🌐 Using MAF Foundry orchestrator (hosted Microsoft Foundry agents)" or "💻 Using MAF Local orchestrator (gpt-5-mini local agents)". They also log the same banner at INFO with `OrchestrationId` + pattern. Future "answer came too fast" reports can be triaged in 5 seconds: which banner is in the response?
 - **General rule (now in skill):** ANY custom executor that sits between hosted-agent (`AIAgentBinding`) executors in a MAF workflow MUST handle `TurnToken` and forward it downstream. `FunctionExecutor` (i.e. `ExecutorBindingExtensions.BindAsExecutor<TIn,TOut>`) is unsafe for this role. Use `ChatForwardingExecutor` or a custom `Executor` subclass with an explicit `TurnToken` route.
+
+### 2026-04-20: TurnToken Propagation Rule (Cross-cutting MAF orchestration)
+
+**Discovery:** Demo 2 executed in ~30ms instead of ~8 minutes because `TurnToken` was silently dropped by the input adapter and sanitizers. Without `TurnToken`, hosted Foundry agents skip API calls and return stub responses via `StepsProcessor` defaults.
+
+**Rule (applies to all MAF-touching agents):** 
+- Input adapters in orchestration chains MUST preserve `TurnToken`. `FunctionExecutor`-based adapters lose it (only handle `List<ChatMessage>` type). Use `ChatForwardingExecutor` or document the explicit `TurnToken` route.
+- Sanitizers between agent pairs MUST route `TurnToken` explicitly. Derive from `Executor` base, add `RouteBuilder` arm for `TurnToken`, forward downstream as-is.
+- If the workflow runs in <100ms instead of expected ~30–60s, first suspect: missing `TurnToken` propagation.
+
+**Reference:** Hicks' 2026-04-20 fix (commit ada9ecc, Orchestration Log `2026-04-20T16-24-21Z-hicks.md`, Skill `.squad/skills/maf-foundry-handoff/`).

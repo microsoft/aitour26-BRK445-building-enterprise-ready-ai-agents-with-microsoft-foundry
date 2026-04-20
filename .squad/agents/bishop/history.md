@@ -66,3 +66,14 @@ These methods are core to `ZavaMAFLocal/MAFLocalAgentProvider.cs` (line 96) and 
 **Commit:** 4db8714 — "Demo 2: log all workflow event types for live visibility"
 
 **Follow-up:** Investigate whether ExecutorInvokedEvent / ExecutorCompletedEvent are emitted during hosted sequential workflows.
+
+### 2026-04-20: TurnToken Propagation Rule (Cross-cutting MAF orchestration)
+
+**Discovery:** Demo 2 executed in ~30ms instead of ~8 minutes because `TurnToken` was silently dropped by the input adapter and sanitizers. Without `TurnToken`, hosted Foundry agents skip API calls and return stub responses via `StepsProcessor` defaults.
+
+**Rule (applies to all MAF-touching agents):** 
+- Input adapters in orchestration chains MUST preserve `TurnToken`. `FunctionExecutor`-based adapters lose it (only handle `List<ChatMessage>` type). Use `ChatForwardingExecutor` or document the explicit `TurnToken` route.
+- Sanitizers between agent pairs MUST route `TurnToken` explicitly. Derive from `Executor` base, add `RouteBuilder` arm for `TurnToken`, forward downstream as-is.
+- If the workflow runs in <100ms instead of expected ~30–60s, first suspect: missing `TurnToken` propagation.
+
+**Reference:** Hicks' 2026-04-20 fix (commit ada9ecc, Orchestration Log `2026-04-20T16-24-21Z-hicks.md`, Skill `.squad/skills/maf-foundry-handoff/`).
