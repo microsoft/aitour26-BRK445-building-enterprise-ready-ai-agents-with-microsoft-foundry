@@ -66,3 +66,10 @@
 - **Why MAF Local works:** Local agents call Azure OpenAI Chat-Completions, which tolerates these items; only the Responses API enforces strict pairing.
 - **Build status:** Compile clean (0 errors / 0 warnings via `dotnet build ... -t:Compile`); a full `dotnet build` only fails on the post-build copy when an Aspire-hosted `MultiAgentDemo.exe` still holds the file lock — stop Aspire first.
 - **Reusable pattern:** Captured in `.squad/skills/maf-foundry-handoff/SKILL.md`.
+
+### 2026-04-20: MAF Foundry Sequential — Entry-Point Adapter Required (Agent #1)
+- **Symptom:** Demo 2 (Foundry, Sequential) failed on agent #1 (ProductSearchAgent_1) with `HTTP 400 invalid_request_error: missing_required_parameter` (`Parameter: input`) — i.e. `/responses` body had no `input` field at all.
+- **Root cause:** `MAFFoundrySequentialBuilder.BuildSequentialForFoundry` constructed `new WorkflowBuilder(firstAgentBinding)` directly. Hosted-agent executors expect `List<ChatMessage>`, but the controller passes a raw `string` to `InProcessExecution.StreamAsync`. `AgentWorkflowBuilder.BuildSequential` silently inserts a `string → List<ChatMessage>` adapter at the entry; our custom builder skipped it, so the first agent received nothing and emitted a `/responses` request with no `input`.
+- **Fix:** Added a `foundry-input-adapter` `BindAsExecutor<string, List<ChatMessage>>` (`query => [new ChatMessage(ChatRole.User, query ?? string.Empty)]`, threadsafe) and made it the workflow root, with an edge to the first agent binding. Inter-agent sanitizer chain unchanged.
+- **Build:** Compile clean (0 errors / 0 warnings) on `dotnet build src/MultiAgentDemo/MultiAgentDemo.csproj -t:Compile`.
+- **General rule:** Custom `WorkflowBuilder`s over hosted Foundry agents need BOTH (a) entry-point `string → List<ChatMessage>` adapter AND (b) inter-agent sanitizers. Captured in `.squad/skills/maf-foundry-handoff/SKILL.md` (confidence bumped — independently confirmed twice now).

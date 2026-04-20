@@ -60,6 +60,40 @@ Then `builder.AddEdge(prevAgent, sanitizer)` →
 See `src/MultiAgentDemo/Controllers/MAFFoundrySequentialBuilder.cs` for the
 full reference implementation.
 
+## Entry-point adapter (also required)
+
+When you build the workflow yourself with `WorkflowBuilder` (instead of
+`AgentWorkflowBuilder.BuildSequential`), you also lose the implicit
+`string → List<ChatMessage>` adapter that MAF would have wired at the workflow
+root. The controller calls `InProcessExecution.StreamAsync(workflow, request.ProductQuery)`
+with a raw `string`, but the first hosted-agent executor expects
+`List<ChatMessage>`. Without an adapter, the first agent's call to Foundry's
+`/responses` endpoint is sent with **no `input` field** and fails with:
+
+```
+HTTP 400 invalid_request_error: missing_required_parameter
+Parameter: input
+```
+
+Fix it by adding an entry-point executor and using it as the workflow root:
+
+```csharp
+ExecutorBinding inputAdapter = ExecutorBindingExtensions.BindAsExecutor<string, List<ChatMessage>>(
+    messageHandler: query => [new ChatMessage(ChatRole.User, query ?? string.Empty)],
+    id: "foundry-input-adapter",
+    options: null,
+    threadsafe: true);
+
+var builder = new WorkflowBuilder(inputAdapter);
+builder.AddEdge(inputAdapter, firstAgentBinding);
+// ... then the inter-agent sanitizer chain as above.
+```
+
+**Rule of thumb:** custom `WorkflowBuilder`s over hosted Foundry agents need
+BOTH (a) the entry-point `string → List<ChatMessage>` adapter AND (b) the
+inter-agent sanitizers. Skipping either produces a Foundry HTTP 400, just at
+different points in the chain (first agent vs. second agent).
+
 ## When NOT to use
 
 - MAF Local agents — they hit the Chat-Completions endpoint and tolerate
@@ -79,3 +113,13 @@ sequential pipeline.
 - MAF `1.0.0-preview.251219.1`
 - Foundry endpoint shape `*.services.ai.azure.com/api/projects/<project>`
 - Agents created with `HostedCodeInterpreterTool` + `HostedFileSearchTool`
+
+## Confidence
+
+**High (independently confirmed twice).** First confirmation: inter-agent
+sanitizer fixed the agent-#2 hand-off (2026-04-20). Second confirmation:
+entry-point adapter fixed the agent-#1 missing-`input` 400 (2026-04-20).
+Both failures share the same root cause shape: hosted Foundry agents'
+`/responses` endpoint enforces strict request shape that MAF's stock
+`AgentWorkflowBuilder.BuildSequential` papers over with implicit adapters
+the custom builder must reinstate.

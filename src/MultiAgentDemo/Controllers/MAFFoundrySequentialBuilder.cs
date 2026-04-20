@@ -25,6 +25,15 @@ namespace MultiAgentDemo.Controllers;
 /// eliminating any tool/function-call/reasoning items before they reach the next
 /// hosted agent.
 /// </para>
+/// <para>
+/// It also inserts a required entry-point adapter at the workflow root that converts
+/// the incoming raw <c>string</c> query into a <c>List&lt;ChatMessage&gt;</c>. MAF's
+/// stock <c>AgentWorkflowBuilder.BuildSequential</c> wires this adapter implicitly;
+/// because we construct the <c>WorkflowBuilder</c> ourselves, we must add it
+/// explicitly. Without it, the first agent's call to Foundry's <c>/responses</c>
+/// endpoint is sent with no <c>input</c> field and fails with
+/// <c>HTTP 400 missing_required_parameter (input)</c>.
+/// </para>
 /// </summary>
 internal static class MAFFoundrySequentialBuilder
 {
@@ -37,7 +46,19 @@ internal static class MAFFoundrySequentialBuilder
         }
 
         ExecutorBinding firstBinding = agents[0].BindAsExecutor(emitEvents: true);
-        var builder = new WorkflowBuilder(firstBinding);
+
+        // Entry-point adapter: convert the controller's raw string query into the
+        // List<ChatMessage> that hosted Foundry agent executors expect. Required
+        // because we build the workflow manually rather than via
+        // AgentWorkflowBuilder.BuildSequential (which inserts this implicitly).
+        ExecutorBinding inputAdapter = ExecutorBindingExtensions.BindAsExecutor<string, List<ChatMessage>>(
+            messageHandler: query => [new ChatMessage(ChatRole.User, query ?? string.Empty)],
+            id: "foundry-input-adapter",
+            options: null,
+            threadsafe: true);
+
+        var builder = new WorkflowBuilder(inputAdapter);
+        builder.AddEdge(inputAdapter, firstBinding);
 
         ExecutorBinding previous = firstBinding;
         for (int i = 1; i < agents.Count; i++)
