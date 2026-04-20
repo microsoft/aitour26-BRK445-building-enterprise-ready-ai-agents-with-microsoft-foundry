@@ -10096,3 +10096,14 @@ deployment-*.txt
 .venv/lib/python3.11/site-packages/material/templates/.icons/material/printer-pos-refresh.svg
 .venv/lib/python3.11/site-packages/material/templates/.icons/material/printer-pos-remove-outline.svg
 .venv/lib/python3.11/site-packages/material/templates/.icons/material/printer-pos-remove.svg
+# Squad: ignore runtime state (logs, inbox, sessions)
+.squad/orchestration-log/
+.squad/log/
+.squad/decisions/inbox/
+.squad/sessions/
+# Squad: SubSquad activation file (local to this machine)
+.squad-workstream
+
+# Visual Studio language service cache
+*.lscache
+
