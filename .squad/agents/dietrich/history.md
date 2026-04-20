@@ -31,7 +31,14 @@ Bishop builds. I watch for drift. MAF ships preview packages on a rapid cadence 
 
 ## Learnings
 
-(Empty — first session.)
+### 2026-04-20: MAF Foundry Sequential Orchestration — Entry-Point + Sanitizer Pattern (Cross-ref: Hicks)
+- **Pattern:** Custom WorkflowBuilders for hosted Foundry sequential agents require TWO layers:
+  1. **Entry adapter:** `BindAsExecutor<string, List<ChatMessage>>` at workflow root (maps input query to ChatMessage list)
+  2. **Inter-agent sanitizers:** `BindAsExecutor<List<ChatMessage>, List<ChatMessage>>` between agent pairs (collapses output to single plain-text User message)
+- **Why:** Foundry `/responses` endpoint strictly validates tool/function/reasoning item pairing. Orphan items cause HTTP 400 `invalid_payload`. Azure OpenAI Chat-Completions API tolerates them (MAF Local unaffected).
+- **Discovery:** Demo 2 initially failed Agent #1 with `missing_required_parameter: input` (no entry adapter), then Agent #2 with `invalid_payload` (no inter-agent sanitizer). Both now fixed via `MAFFoundrySequentialBuilder`.
+- **Implication for future:** If new Foundry orchestration modes (handoff, group chat, etc.) chain hosted agents, evaluate whether Foundry's `/responses` endpoint is involved. If yes, add sanitizers. This pattern will likely persist across MAF versions.
+- **Skill location:** `.squad/skills/maf-foundry-handoff/SKILL.md` (authored by Hicks, confidence: high)
 
 ### 2026-04-20: MAF 1.1.0 Blocker — Breaking API Changes
 - **Fact:** MAF 1.1.0 removed/relocated core agent instantiation methods (`IChatClient.CreateAIAgent()`, `AIProjectClient.GetAIAgent()`, `AIProjectClient.CreateAIAgent()`). This is an architectural shift, not a simple rename or deprecation.
