@@ -12,6 +12,8 @@ How to decide who handles what.
 | Blazor / Store frontend / settings UI | Vasquez | Store pages, components, working-mode toggle, localStorage |
 | Tests / QA / evals / reviewer verdicts | Hudson | xUnit tests, ZavaMAFLocal.Tests, ZavaMAFFoundry.Tests, DataService.Tests, Store.Tests |
 | Docs / README / session-delivery / presenter scripts | Lambert | session-delivery-resources/, README.MD, src/readme.md, presenter notes, demo scripts |
+| Speaker journey audit / prereq & demo-flow validation | Apone | "Can a speaker land tomorrow and run this?", README walk-through, session-delivery-resources/ end-to-end review, link/screenshot freshness, demo timing sanity |
+| MAF / Foundry version drift / package freshness / breaking-change impact | Dietrich | "Are we on latest MAF?", `Microsoft.Agents.AI.*` version alignment audits, Foundry API/shape drift, infra/Brk445-Console-DeployAgents version sync |
 | Code review | Ripley (architecture); Hudson (quality/tests) | PR review, regression risk |
 | Session logging | Scribe | Automatic — never needs routing |
 | Work queue / backlog monitoring | Ralph | Issue triage scans, PR follow-up |
@@ -27,6 +29,8 @@ How to decide who handles what.
 | `squad:vasquez` | Store / Blazor / UI | Vasquez |
 | `squad:hudson` | Tests, QA, evaluation | Hudson |
 | `squad:lambert` | Docs, README, session delivery | Lambert |
+| `squad:apone` | Speaker experience audits, prereq/demo flow validation | Apone |
+| `squad:dietrich` | MAF / Foundry freshness, version alignment, drift detection | Dietrich |
 
 ### How Issue Assignment Works
 

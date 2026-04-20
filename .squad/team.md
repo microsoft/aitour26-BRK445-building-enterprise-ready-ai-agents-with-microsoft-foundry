@@ -17,9 +17,11 @@
 | Bishop  | 🤖 AI Agents Engineer         | .squad/agents/bishop/charter.md  | active |
 | Vasquez | ⚛️ Frontend                   | .squad/agents/vasquez/charter.md | active |
 | Hudson  | 🧪 Tester / QA                | .squad/agents/hudson/charter.md  | active |
-| Lambert | 📝 DevRel / Presenter         | .squad/agents/lambert/charter.md | active |
-| Scribe  | 📋 Session Logger             | .squad/agents/scribe/charter.md  | active |
-| Ralph   | 🔄 Work Monitor               | .squad/agents/ralph/charter.md   | active |
+| Lambert  | 📝 DevRel / Presenter                | .squad/agents/lambert/charter.md  | active |
+| Apone    | 🎤 Speaker Experience Lead           | .squad/agents/apone/charter.md    | active |
+| Dietrich | 🔬 MAF & Foundry Freshness Watcher   | .squad/agents/dietrich/charter.md | active |
+| Scribe   | 📋 Session Logger                    | .squad/agents/scribe/charter.md   | active |
+| Ralph    | 🔄 Work Monitor                      | .squad/agents/ralph/charter.md    | active |
 
 ## Project Context
 

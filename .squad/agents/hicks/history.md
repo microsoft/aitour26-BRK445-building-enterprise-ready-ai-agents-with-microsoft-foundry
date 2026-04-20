@@ -38,3 +38,9 @@
   - Microsoft.Extensions.AI.Abstractions required bump from 10.1.1 to 10.2.0 to resolve package downgrade error (new Aspire.Azure.AI.Inference depends on Microsoft.Extensions.AI 10.2.0).
 - **Build Outcome:** SUCCESS — `dotnet build src\ZavaAppHost\ZavaAppHost.csproj` completed with 0 errors, 2 warnings (NU1901: low severity vulnerabilities in transitive NuGet packages — acceptable). Restore took 32.9s.
 - **Files Changed:** 17 .csproj files across all services + ZavaAppHost + DataService (for Microsoft.Extensions.AI.Abstractions bump).
+
+### 2026-04-20: Preview-Feature Warning Pattern (CA2252)
+- **Fact:** MAF packages (and other preview-feature libs) trigger CA2252 compiler warnings when their types surface in app code. This is expected behavior for preview features.
+- **Suppression pattern (project scope):** Add `<NoWarn>$(NoWarn);CA2252</NoWarn>` to the .csproj. Allows clean builds without `#pragma` directives in every file.
+- **Alternative (file scope):** Use `#pragma warning disable CA2252` at file top (already present in `src/ZavaMAFFoundry/MAFFoundryAgentProvider.cs:1`).
+- **Usage:** Applied to `infra/Brk445-Console-DeployAgents.csproj` when bumping MAF packages to 1.0.0-preview.251219.1 (2026-04-20). Build clean with 0 errors.

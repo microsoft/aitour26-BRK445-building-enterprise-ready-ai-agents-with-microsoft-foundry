@@ -41,6 +41,20 @@
       "created_at": "2026-04-20T14:52:17Z",
       "legacy_named": false,
       "status": "active"
+    },
+    "apone": {
+      "persistent_name": "Apone",
+      "universe": "Alien",
+      "created_at": "2026-04-20T15:46:53Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "dietrich": {
+      "persistent_name": "Dietrich",
+      "universe": "Alien",
+      "created_at": "2026-04-20T15:46:53Z",
+      "legacy_named": false,
+      "status": "active"
     }
   }
 }
