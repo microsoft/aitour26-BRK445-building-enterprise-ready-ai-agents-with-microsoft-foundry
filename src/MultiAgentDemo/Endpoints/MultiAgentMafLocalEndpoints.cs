@@ -239,7 +239,7 @@ public static class MultiAgentMafLocalEndpoints
         var steps = new List<AgentStep>();
         string? lastExecutorId = null;
 
-        var run = await InProcessExecution.OpenStreamingAsync(workflow, request.ProductQuery);
+        await using var run = await InProcessExecution.RunStreamingAsync(workflow, new ChatMessage(ChatRole.User, request.ProductQuery));
         await run.TrySendMessageAsync(new TurnToken(emitEvents: true));
 
         await foreach (var evt in run.WatchStreamAsync().ConfigureAwait(false))
