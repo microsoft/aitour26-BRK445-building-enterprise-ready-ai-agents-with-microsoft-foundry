@@ -77,7 +77,14 @@ public class MultiAgentControllerMAFFoundry : ControllerBase
         try
         {
             var agents = GetAgents();
-            var workflow = AgentWorkflowBuilder.BuildSequential([
+            // NOTE: Hosted Foundry agents call the Responses API and reject orphan
+            // tool/function-call items at the root. AgentWorkflowBuilder.BuildSequential
+            // forwards the prior agent's raw ChatMessage list, which leaks those items
+            // and produces HTTP 400 invalid_payload on the second agent. We use a
+            // sanitizing builder that converts each hand-off to a plain-text user
+            // message. See MAFFoundrySequentialBuilder for details.
+            var workflow = MAFFoundrySequentialBuilder.BuildSequentialForFoundry(
+            [
                 agents.ProductSearch,
                 agents.ProductMatchmaking,
                 agents.LocationService,

@@ -54,3 +54,15 @@
 **Commit:** 4db8714 — "Demo 2: log all workflow event types for live visibility"
 
 **Follow-up:** Investigate whether ExecutorInvokedEvent / ExecutorCompletedEvent are emitted during hosted sequential workflows.
+
+## Learnings
+- 2025: MAF `WorkflowEvent.Data` carries the `Exception` for both `ExecutorFailedEvent` and `WorkflowErrorEvent` (verified against Microsoft.Agents.AI.Workflows 1.0.0-preview.251219.1 XML doc). When adding a fallback `default:` log arm in a workflow event switch, ALWAYS add explicit error-event arms above it at LogError — otherwise failures vanish into an info-level type-name log.
+
+### 2026-04-20: MAF Foundry Sequential Workflow — Hosted Hand-off Payload Bug
+- **Symptom:** Demo 2 (MAF Foundry, Sequential) failed on agent #2 with `HTTP 400 invalid_payload` at `param: "/"` from `OpenAI.Responses.ResponsesClient.CreateResponseAsync`.
+- **Root cause:** Hosted Foundry agents are created with `HostedFileSearchTool` + `HostedCodeInterpreterTool` (`infra/infra/Services/AgentCreationService.cs`). `AgentWorkflowBuilder.BuildSequential` forwards the previous agent's full `List<ChatMessage>` — including hosted-tool / function-call / reasoning content items — as the next agent's input. Foundry's `/responses` endpoint rejects orphan `*_call` items at root.
+- **Fix:** New `MAFFoundrySequentialBuilder.BuildSequentialForFoundry(...)` interposes a `BindAsExecutor<List<ChatMessage>, List<ChatMessage>>` sanitizer between each pair of agents that collapses the prior output to a single plain-text `User` `ChatMessage`. `MultiAgentControllerMAFFoundry.AssistSequentialAsync` uses it instead of `AgentWorkflowBuilder.BuildSequential`.
+- **MAF API used:** `WorkflowBuilder` + `ExecutorBindingExtensions.BindAsExecutor<TIn,TOut>(Func<TIn,TOut>, id, options, threadsafe)` + `agent.BindAsExecutor(emitEvents:true)` + `builder.AddEdge(...)` + `builder.WithOutputFrom(...)`. There is no converter overload on `BuildSequential` in MAF `1.0.0-preview.251219.1`.
+- **Why MAF Local works:** Local agents call Azure OpenAI Chat-Completions, which tolerates these items; only the Responses API enforces strict pairing.
+- **Build status:** Compile clean (0 errors / 0 warnings via `dotnet build ... -t:Compile`); a full `dotnet build` only fails on the post-build copy when an Aspire-hosted `MultiAgentDemo.exe` still holds the file lock — stop Aspire first.
+- **Reusable pattern:** Captured in `.squad/skills/maf-foundry-handoff/SKILL.md`.
