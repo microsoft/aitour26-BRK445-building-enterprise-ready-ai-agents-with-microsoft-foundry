@@ -298,6 +298,29 @@ public class MultiAgentControllerMAFLocal : ControllerBase
                 }
                 break;
 
+            case ExecutorFailedEvent failedEvent:
+            {
+                var ex = failedEvent.Data as Exception;
+                _logger.LogError(ex,
+                    "Workflow ExecutorFailedEvent — ExecutorId: {ExecutorId} | Message: {Message} | Inner: {Inner} | Detail: {Detail}",
+                    failedEvent.ExecutorId,
+                    ex?.Message ?? "(no exception)",
+                    ex?.InnerException?.Message ?? "(none)",
+                    ex?.ToString() ?? failedEvent.ToString());
+                break;
+            }
+
+            case WorkflowErrorEvent errorEvent:
+            {
+                var ex = errorEvent.Data as Exception;
+                _logger.LogError(ex,
+                    "Workflow WorkflowErrorEvent — Message: {Message} | Inner: {Inner} | Detail: {Detail}",
+                    ex?.Message ?? "(no exception)",
+                    ex?.InnerException?.Message ?? "(none)",
+                    ex?.ToString() ?? errorEvent.ToString());
+                break;
+            }
+
             default:
                 _logger.LogInformation("Workflow event: {EventType}", evt.GetType().Name);
                 break;
