@@ -126,6 +126,22 @@ These methods are **core** to agent instantiation in `ZavaMAFLocal/MAFLocalAgent
 
 **Reusability:** These patterns apply to any future doc rebrand or multi-step tutorial.
 
+### Bruno Directive: Drop --use-device-code from az login (2026-04-20)
+
+**Author:** Bruno Capuano (via Copilot)  
+**Status:** Active  
+**Scope:** All docs, scripts, and demos
+
+Never use `--use-device-code` parameter on `az login` commands. Use plain `az login --tenant <tenant>` instead.
+
+**Files Updated:**
+- `session-delivery-resources/docs/02.NeededCloudResources.md` (1 occurrence)
+- `session-delivery-resources/docs/03.HowToRunDemoLocally.md` (3 occurrences)
+
+**Rationale:** User request — simplifies auth flow for demo/presenter scenarios.
+
+**DevRel impact:** When writing or updating docs with Azure CLI authentication, use only plain `az login --tenant <tenant>`. Never include `--use-device-code`.
+
 ## Governance
 
 - All meaningful changes require team consensus

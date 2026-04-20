@@ -31,3 +31,9 @@
   - Last doc: `[⬅ Previous: <Title>](./<file>.md) | [🏠 Session Delivery Resources](../readme.md)`
   - Side-referenced docs (e.g., ManualAgentDeployment.md): Back-links only (parent + home), no forward.
 - **DevRel impact:** Reusable pattern for any future multi-step setup docs. Improves presenter flow when reading sequentially.
+
+### 2026-04-20: Bruno Directive — Drop --use-device-code (Cross-Agent Note)
+- **Directive:** Never use `--use-device-code` on `az login` commands. Use plain `az login --tenant <tenant>` only.
+- **Scope:** All docs, scripts, demos in this repo.
+- **Context:** User request for simplified auth flow.
+- **DevRel impact:** When editing docs with Azure CLI examples, apply this pattern. Simplifies presenter demos and removes unnecessary parameters.
