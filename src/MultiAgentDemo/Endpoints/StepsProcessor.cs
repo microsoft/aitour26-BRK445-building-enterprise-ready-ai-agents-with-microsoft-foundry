@@ -1,7 +1,7 @@
 using Microsoft.Agents.AI;
 using SharedEntities;
 
-namespace MultiAgentDemo.Controllers;
+namespace MultiAgentDemo.Endpoints;
 
 /// <summary>
 /// Provides utility methods for processing agent workflow steps and extracting typed results.

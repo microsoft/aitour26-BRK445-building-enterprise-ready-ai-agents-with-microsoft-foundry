@@ -13,27 +13,18 @@ namespace ZavaMAFLocal;
 /// Provides locally-created agents using the Microsoft Agent Framework.
 /// Agents are created with instructions and tools configured locally using IChatClient.
 /// </summary>
-public class MAFLocalAgentProvider
+/// <remarks>
+/// Initializes a new instance of the MAFLocalAgentProvider.
+/// </remarks>
+/// <param name="chatClient">The chat client to use for creating agents.</param>
+public class MAFLocalAgentProvider(IServiceProvider serviceProvider)
 {
-    private readonly IServiceProvider _serviceProvider;
-
-    /// <summary>
-    /// Initializes a new instance of the MAFLocalAgentProvider.
-    /// </summary>
-    /// <param name="chatClient">The chat client to use for creating agents.</param>
-    public MAFLocalAgentProvider(
-        IServiceProvider serviceProvider,
-        IChatClient chatClient)
-    {
-        _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-    }
-
     /// <summary>
     /// Gets an agent by name string.
     /// </summary>
     public AIAgent GetAgentByName(string agentName)
     {
-        return _serviceProvider.GetRequiredKeyedService<AIAgent>(agentName);
+        return serviceProvider.GetRequiredKeyedService<AIAgent>(agentName);
     }
 
     public AIAgent GetLocalAgentByName(AgentType agent)
@@ -43,7 +34,7 @@ public class MAFLocalAgentProvider
 
     public Workflow GetLocalWorkflowByName(string workflowName)
     {
-        return _serviceProvider.GetRequiredKeyedService<Workflow>(workflowName);
+        return serviceProvider.GetRequiredKeyedService<Workflow>(workflowName);
     }
 }
 
@@ -73,8 +64,7 @@ public static class MAFLocalAgentExtensions
                 .CreateLogger("MAFLocalAgentExtensions");
             serviceLogger?.LogInformation("Creating MAFLocalAgentProvider with IChatClient");
 
-            var chatClient = sp.GetRequiredService<IChatClient>();
-            return new MAFLocalAgentProvider(sp, chatClient);
+            return new MAFLocalAgentProvider(sp);
         });
 
         // Register each agent individually as keyed singleton

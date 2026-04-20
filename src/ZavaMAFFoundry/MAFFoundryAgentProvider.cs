@@ -43,14 +43,14 @@ public class MAFFoundryAgentProvider
     /// <summary>
     /// Gets an AI agent by its agent ID from Microsoft AI Foundry (synchronous).
     /// </summary>
-    public AIAgent GetAIAgent(string agentId, List<AITool>? tools = null)
+    public AIAgent GetAIAgent(string agentName, List<AITool>? tools = null)
     {
-        if (string.IsNullOrWhiteSpace(agentId))
+        if (string.IsNullOrWhiteSpace(agentName))
         {
-            throw new ArgumentException("Agent Name cannot be null or empty", nameof(agentId));
+            throw new ArgumentException("Agent Name cannot be null or empty", nameof(agentName));
         }
 
-        AgentRecord agentRecord = _projectClient.Agents.GetAgent(agentName: agentId);
+        AgentRecord agentRecord = _projectClient.Agents.GetAgent(agentName: agentName);
         return _projectClient.AsAIAgent(agentRecord, tools);
     }
 

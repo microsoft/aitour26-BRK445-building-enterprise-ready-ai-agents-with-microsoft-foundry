@@ -5,68 +5,65 @@ using System.Text.Json;
 using ZavaAgentsMetadata;
 using ZavaMAFLocal;
 
-namespace NavigationService.Controllers;
+namespace NavigationService.Endpoints;
 
-[ApiController]
-[Route("api/[controller]")]
-public class NavigationController : ControllerBase
+public static class NavigationEndpoints
 {
-    private readonly ILogger<NavigationController> _logger;
-    private readonly AIAgent _agentFxAgent;
-
-    public NavigationController(
-        ILogger<NavigationController> logger,
-        MAFLocalAgentProvider localAgentProvider)
+    public static void MapNavigationEndpoints(this IEndpointRouteBuilder routes)
     {
-        _logger = logger;
-        _agentFxAgent = localAgentProvider.GetAgentByName(AgentMetadata.GetAgentName(AgentType.NavigationAgent));
+        var group = routes.MapGroup("/api/Navigation");
+
+        group.MapPost("/directions/llm", GenerateDirectionsLlmAsync);
+        group.MapPost("/directions/maf", GenerateDirectionsMAFAsync);
+        group.MapPost("/directions/directcall", GenerateDirectionsDirectCallAsync);
+        group.MapGet("/health", Health);
     }
 
-    [HttpPost("directions/llm")]
-    public async Task<ActionResult<NavigationInstructions>> GenerateDirectionsLlmAsync([FromBody] DirectionsRequest request, CancellationToken cancellationToken)
+    public static async Task<IResult> GenerateDirectionsLlmAsync(
+        [FromServices] ILogger<Program> logger,
+        [FromServices] MAFLocalAgentProvider localAgentProvider,
+        [FromBody] DirectionsRequest request,
+        CancellationToken cancellationToken)
     {
-        _logger.LogInformation($"{AgentMetadata.LogPrefixes.Llm} Generating directions from {{From}} to {{To}}", FormatLocation(request.From), FormatLocation(request.To));
-
-        // LLM endpoint uses MAF under the hood since we removed SK
-        return await GenerateDirectionsAsync(
-            request,
-            InvokeAgentFrameworkAsync,
-            AgentMetadata.LogPrefixes.Llm,
-            cancellationToken);
+        logger.LogInformation($"{AgentMetadata.LogPrefixes.Llm} Generating directions from {{From}} to {{To}}", FormatLocation(request.From), FormatLocation(request.To));
+        var agent = localAgentProvider.GetAgentByName(AgentMetadata.GetAgentName(AgentType.NavigationAgent));
+        return await GenerateDirectionsAsync(logger, request, (prompt, token) => InvokeAgentFrameworkAsync(agent, prompt, token), AgentMetadata.LogPrefixes.Llm, cancellationToken);
     }
 
-    [HttpPost("directions/maf")]  // Using constant AgentMetadata.FrameworkIdentifiers.Maf
-    public async Task<ActionResult<NavigationInstructions>> GenerateDirectionsMAFAsync([FromBody] DirectionsRequest request, CancellationToken cancellationToken)
+    public static async Task<IResult> GenerateDirectionsMAFAsync(
+        [FromServices] ILogger<Program> logger,
+        [FromServices] MAFLocalAgentProvider localAgentProvider,
+        [FromBody] DirectionsRequest request,
+        CancellationToken cancellationToken)
     {
-        _logger.LogInformation($"{AgentMetadata.LogPrefixes.Maf} Generating directions from {{From}} to {{To}}", FormatLocation(request.From), FormatLocation(request.To));
-
-        return await GenerateDirectionsAsync(
-            request,
-            InvokeAgentFrameworkAsync,
-            AgentMetadata.LogPrefixes.Maf,
-            cancellationToken);
+        logger.LogInformation($"{AgentMetadata.LogPrefixes.Maf} Generating directions from {{From}} to {{To}}", FormatLocation(request.From), FormatLocation(request.To));
+        var agent = localAgentProvider.GetAgentByName(AgentMetadata.GetAgentName(AgentType.NavigationAgent));
+        return await GenerateDirectionsAsync(logger, request, (prompt, token) => InvokeAgentFrameworkAsync(agent, prompt, token), AgentMetadata.LogPrefixes.Maf, cancellationToken);
     }
 
-    [HttpPost("directions/directcall")]
-    public ActionResult<NavigationInstructions> GenerateDirectionsDirectCallAsync([FromBody] DirectionsRequest request)
+    public static IResult GenerateDirectionsDirectCallAsync(
+        [FromServices] ILogger<Program> logger,
+        [FromBody] DirectionsRequest request)
     {
         if (request is null)
         {
-            return BadRequest("Request payload is required.");
+            return Results.BadRequest("Request payload is required.");
         }
 
         if (request.From is null || request.To is null)
         {
-            return BadRequest("Both origin and destination locations are required.");
+            return Results.BadRequest("Both origin and destination locations are required.");
         }
 
-        _logger.LogInformation("[DirectCall] Generating directions from {From} to {To}", FormatLocation(request.From), FormatLocation(request.To));
-
-        // DirectCall mode bypasses AI orchestration and returns fallback response immediately
-        return Ok(BuildFallbackInstructions(request));
+        logger.LogInformation("[DirectCall] Generating directions from {From} to {To}", FormatLocation(request.From), FormatLocation(request.To));
+        return Results.Ok(BuildFallbackInstructions(request));
     }
 
-    private async Task<ActionResult<NavigationInstructions>> GenerateDirectionsAsync(
+    public static IResult Health()
+        => Results.Ok(new { Status = "Healthy", Service = "NavigationService" });
+
+    private static async Task<IResult> GenerateDirectionsAsync(
+        ILogger logger,
         DirectionsRequest request,
         Func<string, CancellationToken, Task<string>> invokeAgentAsync,
         string logPrefix,
@@ -74,12 +71,12 @@ public class NavigationController : ControllerBase
     {
         if (request is null)
         {
-            return BadRequest("Request payload is required.");
+            return Results.BadRequest("Request payload is required.");
         }
 
         if (request.From is null || request.To is null)
         {
-            return BadRequest("Both origin and destination locations are required.");
+            return Results.BadRequest("Both origin and destination locations are required.");
         }
 
         var prompt = BuildNavigationPrompt(request);
@@ -87,46 +84,40 @@ public class NavigationController : ControllerBase
         try
         {
             var agentResponse = await invokeAgentAsync(prompt, cancellationToken);
-            _logger.LogInformation("{Prefix} Raw agent response length: {Length}", logPrefix, agentResponse.Length);
+            logger.LogInformation("{Prefix} Raw agent response length: {Length}", logPrefix, agentResponse.Length);
 
             if (TryParseNavigationInstructions(agentResponse, out var result))
             {
-                return Ok(result);
+                return Results.Ok(result);
             }
 
-            _logger.LogWarning("{Prefix} Unable to parse navigation response. Using fallback instructions. Raw: {Raw}", logPrefix, TrimForLog(agentResponse));
+            logger.LogWarning("{Prefix} Unable to parse navigation response. Using fallback instructions. Raw: {Raw}", logPrefix, TrimForLog(agentResponse));
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "{Prefix} Agent invocation failed. Using fallback instructions.", logPrefix);
+            logger.LogWarning(ex, "{Prefix} Agent invocation failed. Using fallback instructions.", logPrefix);
         }
 
-        return Ok(BuildFallbackInstructions(request));
+        return Results.Ok(BuildFallbackInstructions(request));
     }
 
-    [HttpGet("health")]
-    public IActionResult Health()
-    {
-        return Ok(new { Status = "Healthy", Service = "NavigationService" });
-    }
-
-    private async Task<string> InvokeAgentFrameworkAsync(string prompt, CancellationToken cancellationToken)
+    private static async Task<string> InvokeAgentFrameworkAsync(AIAgent agent, string prompt, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var session = await _agentFxAgent.CreateSessionAsync();
-        var response = await _agentFxAgent.RunAsync(prompt, session);
+        var session = await agent.CreateSessionAsync();
+        var response = await agent.RunAsync(prompt, session);
         return response?.Text ?? string.Empty;
     }
 
-    private NavigationInstructions BuildFallbackInstructions(DirectionsRequest request) => new()
+    private static NavigationInstructions BuildFallbackInstructions(DirectionsRequest request) => new()
     {
         StartLocation = FormatLocation(request.From),
         EstimatedTime = "Approximately 2-3 minutes",
         Steps = GenerateNavigationSteps(request.From, request.To)
     };
 
-    private NavigationStep[] GenerateNavigationSteps(Location from, Location to)
+    private static NavigationStep[] GenerateNavigationSteps(Location from, Location to)
     {
         var steps = new List<NavigationStep>
         {
@@ -169,8 +160,6 @@ public class NavigationController : ControllerBase
 
         return steps.ToArray();
     }
-
-    #region JSON & utility helpers
 
     private static string BuildNavigationPrompt(DirectionsRequest request) => @$"
 You are an indoor navigation assistant for a hardware store. Provide concise step-by-step directions.
@@ -379,8 +368,6 @@ Destination coordinates: {request.To.Lat:F4}, {request.To.Lon:F4}
 
     private static string FormatLocation(Location? location)
         => location is null ? "Unknown" : $"({location.Lat:F4}, {location.Lon:F4})";
-
-    #endregion
 }
 
 public class DirectionsRequest

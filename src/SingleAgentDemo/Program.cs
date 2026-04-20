@@ -1,4 +1,5 @@
 using Microsoft.Agents.AI.DevUI;
+using SingleAgentDemo.Endpoints;
 using SingleAgentDemo.Services;
 using ZavaMAFLocal;
 using ZavaMAFFoundry;
@@ -9,9 +10,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 
 // Add services to the container
-builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddAuthorization();
 
 // Add DataServiceClient for accessing DataService endpoints
 builder.Services.AddDataServiceClient("https+http://dataservice");
@@ -73,7 +74,10 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseAuthorization();
-app.MapControllers();
+app.MapSingleAgentDirectCallEndpoints();
+app.MapSingleAgentLlmEndpoints();
+app.MapSingleAgentMafLocalEndpoints();
+app.MapSingleAgentMafFoundryEndpoints();
 
 app.Run();
 

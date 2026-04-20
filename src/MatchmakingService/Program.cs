@@ -1,5 +1,6 @@
 using ZavaMAFFoundry;
 using ZavaMAFLocal;
+using MatchmakingService.Endpoints;
 using DataServiceClient;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -7,9 +8,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 
 // Add services to the container
-builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddAuthorization();
 
 // Add DataServiceClient for accessing DataService endpoints
 builder.Services.AddDataServiceClient("https+http://dataservice");
@@ -32,6 +33,6 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseAuthorization();
-app.MapControllers();
+app.MapMatchmakingEndpoints();
 
 app.Run();

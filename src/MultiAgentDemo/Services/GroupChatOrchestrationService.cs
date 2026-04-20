@@ -1,4 +1,4 @@
-using MultiAgentDemo.Controllers;
+using MultiAgentDemo.Endpoints;
 using SharedEntities;
 
 namespace MultiAgentDemo.Services;

@@ -5,73 +5,65 @@ using System.Text;
 using ZavaAgentsMetadata;
 using ZavaMAFLocal;
 
-namespace ToolReasoningService.Controllers;
+namespace ToolReasoningService.Endpoints;
 
-[ApiController]
-[Route("api/[controller]")]
-public class ReasoningController : ControllerBase
+public static class ReasoningEndpoints
 {
-    private readonly ILogger<ReasoningController> _logger;
-    private readonly AIAgent _agentFxAgent;
-
-    public ReasoningController(
-        ILogger<ReasoningController> logger,
-        MAFLocalAgentProvider localAgentProvider)
+    public static void MapReasoningEndpoints(this IEndpointRouteBuilder routes)
     {
-        _logger = logger;
-        _agentFxAgent = localAgentProvider.GetAgentByName(AgentMetadata.GetLocalAgentName(AgentType.ToolReasoningAgent));
+        var group = routes.MapGroup("/api/Reasoning");
+
+        group.MapPost("/generate/llm", GenerateReasoningLlmAsync);
+        group.MapPost("/generate/maf_local", GenerateReasoningMAFLocalAsync);
+        group.MapPost("/generate/maf_foundry", GenerateReasoningMAFFoundryAsync);
+        group.MapPost("/generate/directcall", GenerateReasoningDirectCallAsync);
     }
 
-    [HttpPost("generate/llm")]
-    public async Task<ActionResult<string>> GenerateReasoningLlmAsync([FromBody] ReasoningRequest request, CancellationToken cancellationToken)
+    public static async Task<IResult> GenerateReasoningLlmAsync(
+        [FromServices] ILogger<Program> logger,
+        [FromServices] MAFLocalAgentProvider localAgentProvider,
+        [FromBody] ReasoningRequest request,
+        CancellationToken cancellationToken)
     {
-        _logger.LogInformation($"{AgentMetadata.LogPrefixes.Llm} Generating reasoning for prompt");
-
-        // LLM endpoint uses MAF under the hood since we removed SK
-        return await GenerateReasoningAsync(
-            request,
-            async (prompt, token) => await InvokeAgentFrameworkAsync(prompt, token),
-            AgentMetadata.LogPrefixes.Llm,
-            cancellationToken);
+        logger.LogInformation($"{AgentMetadata.LogPrefixes.Llm} Generating reasoning for prompt");
+        var agent = localAgentProvider.GetAgentByName(AgentMetadata.GetLocalAgentName(AgentType.ToolReasoningAgent));
+        return await GenerateReasoningAsync(logger, request, (prompt, token) => InvokeAgentFrameworkAsync(agent, prompt, token), AgentMetadata.LogPrefixes.Llm, cancellationToken);
     }
 
-    [HttpPost("generate/maf_local")]  // Using constant AgentMetadata.FrameworkIdentifiers.MafLocal
-    public async Task<ActionResult<string>> GenerateReasoningMAFLocalAsync([FromBody] ReasoningRequest request, CancellationToken cancellationToken)
+    public static async Task<IResult> GenerateReasoningMAFLocalAsync(
+        [FromServices] ILogger<Program> logger,
+        [FromServices] MAFLocalAgentProvider localAgentProvider,
+        [FromBody] ReasoningRequest request,
+        CancellationToken cancellationToken)
     {
-        _logger.LogInformation($"{AgentMetadata.LogPrefixes.MafLocal} Generating reasoning for prompt");
-
-        return await GenerateReasoningAsync(
-            request,
-            async (prompt, token) => await InvokeAgentFrameworkAsync(prompt, token),
-            AgentMetadata.LogPrefixes.MafLocal,
-            cancellationToken);
+        logger.LogInformation($"{AgentMetadata.LogPrefixes.MafLocal} Generating reasoning for prompt");
+        var agent = localAgentProvider.GetAgentByName(AgentMetadata.GetLocalAgentName(AgentType.ToolReasoningAgent));
+        return await GenerateReasoningAsync(logger, request, (prompt, token) => InvokeAgentFrameworkAsync(agent, prompt, token), AgentMetadata.LogPrefixes.MafLocal, cancellationToken);
     }
 
-    [HttpPost("generate/maf_foundry")]  // Using constant AgentMetadata.FrameworkIdentifiers.MafFoundry
-    public async Task<ActionResult<string>> GenerateReasoningMAFFoundryAsync([FromBody] ReasoningRequest request, CancellationToken cancellationToken)
+    public static async Task<IResult> GenerateReasoningMAFFoundryAsync(
+        [FromServices] ILogger<Program> logger,
+        [FromServices] MAFLocalAgentProvider localAgentProvider,
+        [FromBody] ReasoningRequest request,
+        CancellationToken cancellationToken)
     {
-        _logger.LogInformation($"{AgentMetadata.LogPrefixes.MafFoundry} Generating reasoning for prompt");
-
-        return await GenerateReasoningAsync(
-            request,
-            async (prompt, token) => await InvokeAgentFrameworkAsync(prompt, token),
-            AgentMetadata.LogPrefixes.MafFoundry,
-            cancellationToken);
+        logger.LogInformation($"{AgentMetadata.LogPrefixes.MafFoundry} Generating reasoning for prompt");
+        var agent = localAgentProvider.GetAgentByName(AgentMetadata.GetLocalAgentName(AgentType.ToolReasoningAgent));
+        return await GenerateReasoningAsync(logger, request, (prompt, token) => InvokeAgentFrameworkAsync(agent, prompt, token), AgentMetadata.LogPrefixes.MafFoundry, cancellationToken);
     }
 
-    [HttpPost("generate/directcall")]
-    public ActionResult<string> GenerateReasoningDirectCallAsync([FromBody] ReasoningRequest request)
+    public static async Task<IResult> GenerateReasoningDirectCallAsync(
+        [FromServices] ILogger<Program> logger,
+        [FromBody] ReasoningRequest request,
+        CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("[DirectCall] Generating reasoning for prompt");
-
-        // add a sleep of 1 seconds to emulate the analysis time
-        Thread.Sleep(1000);
-
-        // DirectCall mode bypasses AI orchestration and returns fallback response immediately
-        return Ok(GenerateFallbackReasoning(request));
+        logger.LogInformation("[DirectCall] Generating reasoning for prompt");
+        await Task.Delay(1000, cancellationToken);
+        return Results.Ok(GenerateFallbackReasoning(request));
     }
 
-    private async Task<ActionResult<string>> GenerateReasoningAsync(
+    private static async Task<IResult> GenerateReasoningAsync(
+        ILogger logger,
         ReasoningRequest request,
         Func<string, CancellationToken, Task<string>> invokeAgent,
         string logPrefix,
@@ -82,33 +74,31 @@ public class ReasoningController : ControllerBase
         try
         {
             var agentResponse = await invokeAgent(reasoningPrompt, cancellationToken);
-            _logger.LogInformation("{Prefix} Raw agent response length: {Length}", logPrefix, agentResponse.Length);
+            logger.LogInformation("{Prefix} Raw agent response length: {Length}", logPrefix, agentResponse.Length);
 
             if (!string.IsNullOrWhiteSpace(agentResponse))
             {
-                return Ok(agentResponse);
+                return Results.Ok(agentResponse);
             }
 
-            _logger.LogWarning("{Prefix} Empty response received. Falling back to heuristic reasoning.", logPrefix);
+            logger.LogWarning("{Prefix} Empty response received. Falling back to heuristic reasoning.", logPrefix);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "{Prefix} Agent invocation failed. Falling back to heuristic reasoning.", logPrefix);
+            logger.LogWarning(ex, "{Prefix} Agent invocation failed. Falling back to heuristic reasoning.", logPrefix);
         }
 
-        return Ok(GenerateFallbackReasoning(request));
+        return Results.Ok(GenerateFallbackReasoning(request));
     }
 
-    private async Task<string> InvokeAgentFrameworkAsync(string prompt, CancellationToken cancellationToken)
+    private static async Task<string> InvokeAgentFrameworkAsync(AIAgent agent, string prompt, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var session = await _agentFxAgent.CreateSessionAsync();
-        var response = await _agentFxAgent.RunAsync(prompt, session);
+        var session = await agent.CreateSessionAsync();
+        var response = await agent.RunAsync(prompt, session);
         return response?.Text ?? string.Empty;
     }
-
-    #region Prompt & fallback helpers
 
     private static string BuildReasoningPrompt(ReasoningRequest request) => $@"
 You are an expert DIY consultant. Based on the following information, provide detailed reasoning for tool recommendations:
@@ -172,6 +162,4 @@ Format your response with clear sections and be encouraging while being practica
         reasoning.AppendLine("\n**Safety Note:** Always wear appropriate protective gear and work at a comfortable pace to avoid mistakes.");
         return reasoning.ToString();
     }
-
-    #endregion
 }

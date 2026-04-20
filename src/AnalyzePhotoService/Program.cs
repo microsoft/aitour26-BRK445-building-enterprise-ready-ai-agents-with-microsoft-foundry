@@ -1,15 +1,16 @@
 using ZavaMAFFoundry;
 using ZavaMAFLocal;
 using DataServiceClient;
+using AnalyzePhotoService.Endpoints;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
 // Add services to the container
-builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddAuthorization();
 
 // Add DataServiceClient for accessing DataService endpoints
 builder.Services.AddDataServiceClient("https+http://dataservice");
@@ -32,6 +33,6 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseAuthorization();
-app.MapControllers();
+app.MapPhotoAnalysisEndpoints();
 
 app.Run();

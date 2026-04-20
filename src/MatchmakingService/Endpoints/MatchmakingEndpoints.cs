@@ -1,64 +1,59 @@
 using Microsoft.Agents.AI;
 using Microsoft.AspNetCore.Mvc;
 using SharedEntities;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text.Json;
 using ZavaAgentsMetadata;
 using ZavaMAFLocal;
 
-namespace MatchmakingService.Controllers;
+namespace MatchmakingService.Endpoints;
 
-[ApiController]
-[Route("api/[controller]")]
-public class MatchmakingController : ControllerBase
+public static class MatchmakingEndpoints
 {
-    private readonly ILogger<MatchmakingController> _logger;
-    private readonly AIAgent _agentFxAgent;
-
-    public MatchmakingController(
-        ILogger<MatchmakingController> logger,
-        MAFLocalAgentProvider localAgentProvider)
+    public static void MapMatchmakingEndpoints(this IEndpointRouteBuilder routes)
     {
-        _logger = logger;
-        _agentFxAgent = localAgentProvider.GetAgentByName(AgentMetadata.GetAgentName(AgentType.ProductMatchmakingAgent));
+        var group = routes.MapGroup("/api/Matchmaking");
+
+        group.MapPost("/alternatives/llm", FindAlternativesLlmAsync);
+        group.MapPost("/alternatives/maf", FindAlternativesMAFAsync);
+        group.MapPost("/alternatives/directcall", FindAlternativesDirectCallAsync);
+        group.MapGet("/health", Health);
     }
 
-    [HttpPost("alternatives/llm")]
-    public async Task<ActionResult<MatchmakingResult>> FindAlternativesLlmAsync([FromBody] AlternativesRequest request, CancellationToken cancellationToken)
+    public static async Task<IResult> FindAlternativesLlmAsync(
+        [FromServices] ILogger<Program> logger,
+        [FromServices] MAFLocalAgentProvider localAgentProvider,
+        [FromBody] AlternativesRequest request,
+        CancellationToken cancellationToken)
     {
-        _logger.LogInformation($"{AgentMetadata.LogPrefixes.Llm} Finding alternatives for product: {{ProductQuery}}, User: {{UserId}}", request.ProductQuery, request.UserId);
-
-        // LLM endpoint uses MAF under the hood since we removed SK
-        return await FindAlternativesAsync(
-            request,
-            InvokeAgentFrameworkAsync,
-            AgentMetadata.LogPrefixes.Llm,
-            cancellationToken);
+        logger.LogInformation($"{AgentMetadata.LogPrefixes.Llm} Finding alternatives for product: {{ProductQuery}}, User: {{UserId}}", request.ProductQuery, request.UserId);
+        var agent = localAgentProvider.GetAgentByName(AgentMetadata.GetAgentName(AgentType.ProductMatchmakingAgent));
+        return await FindAlternativesAsync(logger, request, (prompt, token) => InvokeAgentFrameworkAsync(agent, prompt, token), AgentMetadata.LogPrefixes.Llm, cancellationToken);
     }
 
-    [HttpPost("alternatives/maf")]  // Using constant AgentMetadata.FrameworkIdentifiers.Maf
-    public async Task<ActionResult<MatchmakingResult>> FindAlternativesMAFAsync([FromBody] AlternativesRequest request, CancellationToken cancellationToken)
+    public static async Task<IResult> FindAlternativesMAFAsync(
+        [FromServices] ILogger<Program> logger,
+        [FromServices] MAFLocalAgentProvider localAgentProvider,
+        [FromBody] AlternativesRequest request,
+        CancellationToken cancellationToken)
     {
-        _logger.LogInformation($"{AgentMetadata.LogPrefixes.Maf} Finding alternatives for product: {{ProductQuery}}, User: {{UserId}}", request.ProductQuery, request.UserId);
-
-        return await FindAlternativesAsync(
-            request,
-            InvokeAgentFrameworkAsync,
-            AgentMetadata.LogPrefixes.Maf,
-            cancellationToken);
+        logger.LogInformation($"{AgentMetadata.LogPrefixes.Maf} Finding alternatives for product: {{ProductQuery}}, User: {{UserId}}", request.ProductQuery, request.UserId);
+        var agent = localAgentProvider.GetAgentByName(AgentMetadata.GetAgentName(AgentType.ProductMatchmakingAgent));
+        return await FindAlternativesAsync(logger, request, (prompt, token) => InvokeAgentFrameworkAsync(agent, prompt, token), AgentMetadata.LogPrefixes.Maf, cancellationToken);
     }
 
-    [HttpPost("alternatives/directcall")]
-    public ActionResult<MatchmakingResult> FindAlternativesDirectCallAsync([FromBody] AlternativesRequest request)
+    public static IResult FindAlternativesDirectCallAsync(
+        [FromServices] ILogger<Program> logger,
+        [FromBody] AlternativesRequest request)
     {
-        _logger.LogInformation("[DirectCall] Finding alternatives for product: {ProductQuery}, User: {UserId}", request.ProductQuery, request.UserId);
-
-        // DirectCall mode bypasses AI orchestration and returns fallback response immediately
-        return Ok(BuildFallbackResult(request));
+        logger.LogInformation("[DirectCall] Finding alternatives for product: {ProductQuery}, User: {UserId}", request.ProductQuery, request.UserId);
+        return Results.Ok(BuildFallbackResult(request));
     }
 
-    private async Task<ActionResult<MatchmakingResult>> FindAlternativesAsync(
+    public static IResult Health()
+        => Results.Ok(new { Status = "Healthy", Service = "MatchmakingService" });
+
+    private static async Task<IResult> FindAlternativesAsync(
+        ILogger logger,
         AlternativesRequest request,
         Func<string, CancellationToken, Task<string>> invokeAgentAsync,
         string logPrefix,
@@ -69,37 +64,33 @@ public class MatchmakingController : ControllerBase
         try
         {
             var agentResponse = await invokeAgentAsync(prompt, cancellationToken);
-            _logger.LogInformation("{Prefix} Raw agent response length: {Length}", logPrefix, agentResponse.Length);
+            logger.LogInformation("{Prefix} Raw agent response length: {Length}", logPrefix, agentResponse.Length);
 
             if (TryParseMatchmakingResult(agentResponse, out var result))
             {
-                return Ok(result);
+                return Results.Ok(result);
             }
 
-            _logger.LogWarning("{Prefix} Unable to parse agent response. Using fallback recommendations. Raw: {Raw}", logPrefix, TrimForLog(agentResponse));
+            logger.LogWarning("{Prefix} Unable to parse agent response. Using fallback recommendations. Raw: {Raw}", logPrefix, TrimForLog(agentResponse));
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "{Prefix} Agent invocation failed. Falling back to heuristic recommendations.", logPrefix);
+            logger.LogWarning(ex, "{Prefix} Agent invocation failed. Falling back to heuristic recommendations.", logPrefix);
         }
 
-        return Ok(BuildFallbackResult(request));
+        return Results.Ok(BuildFallbackResult(request));
     }
 
-    [HttpGet("health")]
-    public IActionResult Health()
-        => Ok(new { Status = "Healthy", Service = "MatchmakingService" });
-
-    private async Task<string> InvokeAgentFrameworkAsync(string prompt, CancellationToken cancellationToken)
+    private static async Task<string> InvokeAgentFrameworkAsync(AIAgent agent, string prompt, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var session = await _agentFxAgent.CreateSessionAsync();
-        var response = await _agentFxAgent.RunAsync(prompt, session);
+        var session = await agent.CreateSessionAsync();
+        var response = await agent.RunAsync(prompt, session);
         return response?.Text ?? string.Empty;
     }
 
-    private MatchmakingResult BuildFallbackResult(AlternativesRequest request)
+    private static MatchmakingResult BuildFallbackResult(AlternativesRequest request)
     {
         var normalizedQuery = request.ProductQuery.Trim();
         var baseName = string.IsNullOrEmpty(normalizedQuery) ? "your project" : normalizedQuery;
@@ -148,8 +139,6 @@ public class MatchmakingController : ControllerBase
             SimilarProducts = similarProducts.ToArray()
         };
     }
-
-    #region JSON & utility helpers
 
     private static string BuildMatchmakingPrompt(AlternativesRequest request) => @$"
 You are an AI assistant that recommends alternative DIY tools and similar products for store customers.
@@ -256,14 +245,7 @@ User identifier: ""{request.UserId}""
                     : string.Empty
             };
 
-            if (hasInStock)
-            {
-                product.InStock = inStockProp.GetBoolean();
-            }
-            else
-            {
-                product.InStock = product.IsAvailable;
-            }
+            product.InStock = hasInStock ? inStockProp.GetBoolean() : product.IsAvailable;
 
             if (!string.IsNullOrWhiteSpace(product.Name) && !string.IsNullOrWhiteSpace(product.Sku))
             {
@@ -306,6 +288,4 @@ User identifier: ""{request.UserId}""
 
     private static string TrimForLog(string value, int maxLength = 400)
         => value.Length <= maxLength ? value : value[..maxLength] + "...";
-
-    #endregion
 }

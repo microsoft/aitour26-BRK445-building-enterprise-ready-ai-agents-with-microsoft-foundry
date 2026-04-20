@@ -5,52 +5,60 @@ using System.Text.Json;
 using ZavaAgentsMetadata;
 using ZavaMAFLocal;
 
-namespace LocationService.Controllers;
+namespace LocationService.Endpoints;
 
-[ApiController]
-[Route("api/[controller]")]
-public class LocationController : ControllerBase
+public static class LocationEndpoints
 {
-    private readonly ILogger<LocationController> _logger;
-    private readonly AIAgent _agentFxAgent;
-    private readonly DataServiceClient.DataServiceClient _dataServiceClient;
-
-    public LocationController(
-        ILogger<LocationController> logger,        
-        DataServiceClient.DataServiceClient dataServiceClient,
-        MAFLocalAgentProvider localAgentProvider)
+    public static void MapLocationEndpoints(this IEndpointRouteBuilder routes)
     {
-        _logger = logger;
-        _dataServiceClient = dataServiceClient;
-        _agentFxAgent = localAgentProvider.GetAgentByName(AgentMetadata.GetAgentName(AgentType.LocationServiceAgent));
+        var group = routes.MapGroup("/api/Location");
+
+        group.MapGet("/find/llm", FindProductLocationLlmAsync);
+        group.MapGet("/find/maf", FindProductLocationMAFAsync);
+        group.MapGet("/health", Health);
     }
 
-    [HttpGet("find/llm")]
-    public async Task<ActionResult<LocationResult>> FindProductLocationLlmAsync([FromQuery] string product, CancellationToken cancellationToken)
+    public static async Task<IResult> FindProductLocationLlmAsync(
+        [FromServices] ILogger<Program> logger,
+        [FromServices] DataServiceClient.DataServiceClient dataServiceClient,
+        [FromServices] MAFLocalAgentProvider localAgentProvider,
+        [FromQuery] string product,
+        CancellationToken cancellationToken)
     {
-        _logger.LogInformation($"{AgentMetadata.LogPrefixes.Llm} Finding location for product: {{Product}}", product);
-
-        // LLM endpoint uses MAF under the hood since we removed SK
+        logger.LogInformation($"{AgentMetadata.LogPrefixes.Llm} Finding location for product: {{Product}}", product);
+        var agent = localAgentProvider.GetAgentByName(AgentMetadata.GetAgentName(AgentType.LocationServiceAgent));
         return await FindProductLocationAsync(
+            logger,
+            dataServiceClient,
             product,
-            InvokeAgentFrameworkAsync,
+            (prompt, token) => InvokeAgentFrameworkAsync(agent, prompt, token),
             AgentMetadata.LogPrefixes.Llm,
             cancellationToken);
     }
 
-    [HttpGet("find/maf")]  // Using constant AgentMetadata.FrameworkIdentifiers.Maf
-    public async Task<ActionResult<LocationResult>> FindProductLocationMAFAsync([FromQuery] string product, CancellationToken cancellationToken)
+    public static async Task<IResult> FindProductLocationMAFAsync(
+        [FromServices] ILogger<Program> logger,
+        [FromServices] DataServiceClient.DataServiceClient dataServiceClient,
+        [FromServices] MAFLocalAgentProvider localAgentProvider,
+        [FromQuery] string product,
+        CancellationToken cancellationToken)
     {
-        _logger.LogInformation($"{AgentMetadata.LogPrefixes.Maf} Finding location for product: {{Product}}", product);
-
+        logger.LogInformation($"{AgentMetadata.LogPrefixes.Maf} Finding location for product: {{Product}}", product);
+        var agent = localAgentProvider.GetAgentByName(AgentMetadata.GetAgentName(AgentType.LocationServiceAgent));
         return await FindProductLocationAsync(
+            logger,
+            dataServiceClient,
             product,
-            InvokeAgentFrameworkAsync,
+            (prompt, token) => InvokeAgentFrameworkAsync(agent, prompt, token),
             AgentMetadata.LogPrefixes.Maf,
             cancellationToken);
     }
 
-    private async Task<ActionResult<LocationResult>> FindProductLocationAsync(
+    public static IResult Health() => Results.Ok(new { Status = "Healthy", Service = "LocationService" });
+
+    private static async Task<IResult> FindProductLocationAsync(
+        ILogger logger,
+        DataServiceClient.DataServiceClient dataServiceClient,
         string product,
         Func<string, CancellationToken, Task<string>> invokeAgentAsync,
         string logPrefix,
@@ -58,7 +66,7 @@ public class LocationController : ControllerBase
     {
         if (string.IsNullOrWhiteSpace(product))
         {
-            return BadRequest("Product query is required.");
+            return Results.BadRequest("Product query is required.");
         }
 
         var prompt = BuildLocationPrompt(product);
@@ -66,71 +74,65 @@ public class LocationController : ControllerBase
         try
         {
             var agentResponse = await invokeAgentAsync(prompt, cancellationToken);
-            _logger.LogInformation("{Prefix} Raw agent response length: {Length}", logPrefix, agentResponse.Length);
+            logger.LogInformation("{Prefix} Raw agent response length: {Length}", logPrefix, agentResponse.Length);
 
             if (TryParseLocationResult(agentResponse, out var parsed))
             {
-                return Ok(parsed);
+                return Results.Ok(parsed);
             }
 
-            _logger.LogWarning("{Prefix} Unable to parse agent response. Using fallback locations. Raw: {Raw}", logPrefix, TrimForLog(agentResponse));
+            logger.LogWarning("{Prefix} Unable to parse agent response. Using fallback locations. Raw: {Raw}", logPrefix, TrimForLog(agentResponse));
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "{Prefix} Agent invocation failed. Using fallback locations.", logPrefix);
+            logger.LogWarning(ex, "{Prefix} Agent invocation failed. Using fallback locations.", logPrefix);
         }
 
-        return Ok(await BuildFallbackResult(product));
+        return Results.Ok(await BuildFallbackResult(logger, dataServiceClient, product));
     }
 
-    [HttpGet("health")]
-    public IActionResult Health()
-    {
-        return Ok(new { Status = "Healthy", Service = "LocationService" });
-    }
-
-    private async Task<string> InvokeAgentFrameworkAsync(string prompt, CancellationToken cancellationToken)
+    private static async Task<string> InvokeAgentFrameworkAsync(AIAgent agent, string prompt, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var session = await _agentFxAgent.CreateSessionAsync();
-        var response = await _agentFxAgent.RunAsync(prompt, session);
+        var session = await agent.CreateSessionAsync();
+        var response = await agent.RunAsync(prompt, session);
         return response?.Text ?? string.Empty;
     }
 
-    private async Task<LocationResult> BuildFallbackResult(string product)
+    private static async Task<LocationResult> BuildFallbackResult(
+        ILogger logger,
+        DataServiceClient.DataServiceClient dataServiceClient,
+        string product)
     {
-        // Try to search locations from DataService first
         try
         {
-            var locations = await _dataServiceClient.SearchLocationsAsync(product);
+            var locations = await dataServiceClient.SearchLocationsAsync(product);
             if (locations != null && locations.Count > 0)
             {
-                _logger.LogInformation("Retrieved {Count} locations from DataService for product: {Product}", locations.Count, product);
+                logger.LogInformation("Retrieved {Count} locations from DataService for product: {Product}", locations.Count, product);
                 return new LocationResult { StoreLocations = locations.ToArray() };
             }
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to retrieve locations from DataService");
+            logger.LogWarning(ex, "Failed to retrieve locations from DataService");
         }
 
-        // Fallback to generated locations
         return new LocationResult
         {
             StoreLocations = GenerateLocationsByProduct(product)
         };
     }
 
-    private StoreLocation[] GenerateLocationsByProduct(string product)
+    private static StoreLocation[] GenerateLocationsByProduct(string product)
     {
-        // Simple logic to generate different locations based on product type
         var productLower = product.ToLowerInvariant();
 
         if (productLower.Contains("tool") || productLower.Contains("drill") || productLower.Contains("hammer"))
         {
-            return new[]
-            {
+            return
+            [
                 new StoreLocation
                 {
                     Section = "Hardware Tools",
@@ -138,12 +140,12 @@ public class LocationController : ControllerBase
                     Shelf = "Middle",
                     Description = $"Hand and power tools section - {product}"
                 }
-            };
+            ];
         }
         else if (productLower.Contains("paint") || productLower.Contains("brush"))
         {
-            return new[]
-            {
+            return
+            [
                 new StoreLocation
                 {
                     Section = "Paint & Supplies",
@@ -151,12 +153,12 @@ public class LocationController : ControllerBase
                     Shelf = "Top",
                     Description = $"Paint and painting supplies - {product}"
                 }
-            };
+            ];
         }
         else if (productLower.Contains("garden") || productLower.Contains("plant"))
         {
-            return new[]
-            {
+            return
+            [
                 new StoreLocation
                 {
                     Section = "Garden Center",
@@ -164,12 +166,12 @@ public class LocationController : ControllerBase
                     Shelf = "Ground Level",
                     Description = $"Outdoor garden section - {product}"
                 }
-            };
+            ];
         }
         else
         {
-            return new[]
-            {
+            return
+            [
                 new StoreLocation
                 {
                     Section = "General Merchandise",
@@ -177,11 +179,9 @@ public class LocationController : ControllerBase
                     Shelf = "Middle",
                     Description = $"General location for {product}"
                 }
-            };
+            ];
         }
     }
-
-    #region JSON & utility helpers
 
     private static string BuildLocationPrompt(string product) => @$"
 You are an assistant that helps customers locate DIY products within a hardware store.
@@ -321,6 +321,4 @@ Product query: ""{product}""
 
     private static string TrimForLog(string value, int maxLength = 400)
         => value.Length <= maxLength ? value : value[..maxLength] + "...";
-
-    #endregion
 }

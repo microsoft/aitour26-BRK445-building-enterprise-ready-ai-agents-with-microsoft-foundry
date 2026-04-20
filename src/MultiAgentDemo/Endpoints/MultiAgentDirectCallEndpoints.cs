@@ -1,72 +1,76 @@
 using Microsoft.AspNetCore.Mvc;
 using SharedEntities;
 
-namespace MultiAgentDemo.Controllers;
+namespace MultiAgentDemo.Endpoints;
 
-/// <summary>
-/// Controller for multi-agent orchestration using direct HTTP calls to business services.
-/// This mode bypasses AI orchestration and calls the underlying HTTP services directly.
-/// </summary>
-[ApiController]
-[Route("api/multiagent/directcall")]
-public class MultiAgentControllerDirectCall : ControllerBase
+public static class MultiAgentDirectCallEndpoints
 {
-    private readonly ILogger<MultiAgentControllerDirectCall> _logger;
-
-    public MultiAgentControllerDirectCall(ILogger<MultiAgentControllerDirectCall> logger)
+    public static void MapMultiAgentDirectCallEndpoints(this IEndpointRouteBuilder routes)
     {
-        _logger = logger;
+        var group = routes.MapGroup("/api/multiagent/directcall");
+
+        group.MapPost("/assist", AssistAsync);
+        group.MapPost("/assist/sequential", AssistSequentialAsync);
+        group.MapPost("/assist/concurrent", AssistConcurrentAsync);
+        group.MapPost("/assist/handoff", AssistHandoffAsync);
+        group.MapPost("/assist/groupchat", AssistGroupChatAsync);
+        group.MapPost("/assist/magentic", AssistMagenticAsync);
     }
 
-    /// <summary>
-    /// Processes a multi-agent request using direct HTTP calls to business services.
-    /// </summary>
-    [HttpPost("assist")]
-    public async Task<ActionResult<MultiAgentResponse>> AssistAsync([FromBody] MultiAgentRequest? request)
+    public static Task<IResult> AssistAsync(
+        [FromServices] ILogger<Program> logger,
+        [FromBody] MultiAgentRequest? request)
+        => AssistCoreAsync(logger, request);
+
+    public static Task<IResult> AssistSequentialAsync(
+        [FromServices] ILogger<Program> logger,
+        [FromBody] MultiAgentRequest? request)
+        => AssistCoreAsync(logger, request);
+
+    public static Task<IResult> AssistConcurrentAsync(
+        [FromServices] ILogger<Program> logger,
+        [FromBody] MultiAgentRequest? request)
+        => AssistCoreAsync(logger, request);
+
+    public static Task<IResult> AssistHandoffAsync(
+        [FromServices] ILogger<Program> logger,
+        [FromBody] MultiAgentRequest? request)
+        => AssistCoreAsync(logger, request);
+
+    public static Task<IResult> AssistGroupChatAsync(
+        [FromServices] ILogger<Program> logger,
+        [FromBody] MultiAgentRequest? request)
+        => AssistCoreAsync(logger, request);
+
+    public static Task<IResult> AssistMagenticAsync(
+        [FromServices] ILogger<Program> logger,
+        [FromBody] MultiAgentRequest? request)
+        => AssistCoreAsync(logger, request);
+
+    private static Task<IResult> AssistCoreAsync(ILogger logger, MultiAgentRequest? request)
     {
         if (request == null || string.IsNullOrWhiteSpace(request.ProductQuery))
         {
-            return BadRequest("Request body is required and must include a ProductQuery.");
+            return Task.FromResult<IResult>(Results.BadRequest("Request body is required and must include a ProductQuery."));
         }
 
-        _logger.LogInformation(
+        logger.LogInformation(
             "Starting direct HTTP call orchestration for query: {ProductQuery}",
             request.ProductQuery);
 
         try
         {
-            // Create a response using direct service calls with fallback data
-            var response = CreateDirectCallResponse(request);
-            return Ok(response);
+            return Task.FromResult<IResult>(Results.Ok(CreateDirectCallResponse(request)));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error in direct call orchestration");
-            return StatusCode(500, "An error occurred during direct call processing.");
+            logger.LogError(ex, "Error in direct call orchestration");
+            return Task.FromResult<IResult>(
+                Results.Text("An error occurred during direct call processing.", statusCode: StatusCodes.Status500InternalServerError));
         }
     }
 
-    [HttpPost("assist/sequential")]
-    public Task<ActionResult<MultiAgentResponse>> AssistSequentialAsync([FromBody] MultiAgentRequest? request)
-        => AssistAsync(request);
-
-    [HttpPost("assist/concurrent")]
-    public Task<ActionResult<MultiAgentResponse>> AssistConcurrentAsync([FromBody] MultiAgentRequest? request)
-        => AssistAsync(request);
-
-    [HttpPost("assist/handoff")]
-    public Task<ActionResult<MultiAgentResponse>> AssistHandoffAsync([FromBody] MultiAgentRequest? request)
-        => AssistAsync(request);
-
-    [HttpPost("assist/groupchat")]
-    public Task<ActionResult<MultiAgentResponse>> AssistGroupChatAsync([FromBody] MultiAgentRequest? request)
-        => AssistAsync(request);
-
-    [HttpPost("assist/magentic")]
-    public Task<ActionResult<MultiAgentResponse>> AssistMagenticAsync([FromBody] MultiAgentRequest? request)
-        => AssistAsync(request);
-
-    private MultiAgentResponse CreateDirectCallResponse(MultiAgentRequest request)
+    private static MultiAgentResponse CreateDirectCallResponse(MultiAgentRequest request)
     {
         var orchestrationId = Guid.NewGuid().ToString("N")[..8];
         var baseTime = DateTime.UtcNow;
