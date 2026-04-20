@@ -1,0 +1,17 @@
+{
+  "universe_usage_history": [
+    {
+      "universe": "Alien",
+      "assignment_id": "init-2026-04-20",
+      "used_at": "2026-04-20T14:52:17Z"
+    }
+  ],
+  "assignment_cast_snapshots": {
+    "init-2026-04-20": {
+      "universe": "Alien",
+      "assigned_at": "2026-04-20T14:52:17Z",
+      "members": ["Ripley", "Hicks", "Bishop", "Vasquez", "Hudson", "Lambert"],
+      "rationale": "Ensemble crew universe (capacity 8) fits 6-member specialist team for a multi-service .NET Aspire / Microsoft Foundry agent solution; leaves headroom for one or two future hires."
+    }
+  }
+}

@@ -77,7 +77,14 @@ public class MultiAgentControllerMAFFoundry : ControllerBase
         try
         {
             var agents = GetAgents();
-            var workflow = AgentWorkflowBuilder.BuildSequential([
+            // NOTE: Hosted Foundry agents call the Responses API and reject orphan
+            // tool/function-call items at the root. AgentWorkflowBuilder.BuildSequential
+            // forwards the prior agent's raw ChatMessage list, which leaks those items
+            // and produces HTTP 400 invalid_payload on the second agent. We use a
+            // sanitizing builder that converts each hand-off to a plain-text user
+            // message. See MAFFoundrySequentialBuilder for details.
+            var workflow = MAFFoundrySequentialBuilder.BuildSequentialForFoundry(
+            [
                 agents.ProductSearch,
                 agents.ProductMatchmaking,
                 agents.LocationService,
@@ -214,10 +221,28 @@ public class MultiAgentControllerMAFFoundry : ControllerBase
     /// <summary>
     /// Executes a workflow and processes the streaming events.
     /// </summary>
+    private const string OrchestratorIdentityBanner =
+        "🌐 Using MAF Foundry orchestrator (hosted Microsoft Foundry agents)";
+
     private async Task<MultiAgentResponse> RunWorkflowAsync(MultiAgentRequest request, Workflow workflow)
     {
         var orchestrationId = Guid.NewGuid().ToString();
-        var steps = new List<AgentStep>();
+        var startedAt = DateTime.UtcNow;
+        _logger.LogInformation(
+            "{Banner} | OrchestrationId={OrchestrationId} | Pattern={Orchestration}",
+            OrchestratorIdentityBanner, orchestrationId, request.Orchestration);
+
+        var steps = new List<AgentStep>
+        {
+            new()
+            {
+                Agent = "Orchestrator",
+                AgentId = "maf-foundry-orchestrator",
+                Action = $"Routing {request.Orchestration} request",
+                Result = OrchestratorIdentityBanner,
+                Timestamp = startedAt
+            }
+        };
         string? lastExecutorId = null;
 
         var run = await InProcessExecution.StreamAsync(workflow, request.ProductQuery);
@@ -263,12 +288,12 @@ public class MultiAgentControllerMAFFoundry : ControllerBase
                 if (updateEvent.ExecutorId != lastExecutorId)
                 {
                     lastExecutorId = updateEvent.ExecutorId;
-                    _logger.LogDebug("ExecutorId changed to: {ExecutorId}", updateEvent.ExecutorId);
+                    _logger.LogInformation("Workflow step → executor: {ExecutorId}", updateEvent.ExecutorId);
                 }
                 break;
 
             case WorkflowOutputEvent outputEvent:
-                _logger.LogDebug("WorkflowOutput - SourceId: {SourceId}", outputEvent.SourceId);
+                _logger.LogInformation("Workflow output received from: {SourceId}", outputEvent.SourceId);
                 var messages = outputEvent.As<List<ChatMessage>>() ?? [];
                 
                 foreach (var message in messages)
@@ -282,6 +307,33 @@ public class MultiAgentControllerMAFFoundry : ControllerBase
                         Timestamp = message.CreatedAt?.UtcDateTime ?? DateTime.UtcNow
                     });
                 }
+                break;
+
+            case ExecutorFailedEvent failedEvent:
+            {
+                var ex = failedEvent.Data as Exception;
+                _logger.LogError(ex,
+                    "Workflow ExecutorFailedEvent — ExecutorId: {ExecutorId} | Message: {Message} | Inner: {Inner} | Detail: {Detail}",
+                    failedEvent.ExecutorId,
+                    ex?.Message ?? "(no exception)",
+                    ex?.InnerException?.Message ?? "(none)",
+                    ex?.ToString() ?? failedEvent.ToString());
+                break;
+            }
+
+            case WorkflowErrorEvent errorEvent:
+            {
+                var ex = errorEvent.Data as Exception;
+                _logger.LogError(ex,
+                    "Workflow WorkflowErrorEvent — Message: {Message} | Inner: {Inner} | Detail: {Detail}",
+                    ex?.Message ?? "(no exception)",
+                    ex?.InnerException?.Message ?? "(none)",
+                    ex?.ToString() ?? errorEvent.ToString());
+                break;
+            }
+
+            default:
+                _logger.LogInformation("Workflow event: {EventType}", evt.GetType().Name);
                 break;
         }
     }

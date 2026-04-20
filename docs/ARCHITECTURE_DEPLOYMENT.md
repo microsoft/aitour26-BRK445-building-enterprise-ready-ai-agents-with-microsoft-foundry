@@ -30,10 +30,26 @@ The BRK445 solution supports two deployment models:
   dotnet --version  # Should show 10.0 or higher
   ```
 
-2. **.NET Aspire Workload**
+2. **Aspire CLI**
+   
+   The Aspire CLI is installed via an install script (the old `dotnet workload install aspire` is obsolete).
+   
+   **Bash (Linux/macOS):**
    ```bash
-   dotnet workload install aspire
+   curl -sSL https://aspire.dev/install.sh | bash
    ```
+   
+   **PowerShell (Windows):**
+   ```powershell
+   iex "& { $(irm https://aspire.dev/install.ps1) }"
+   ```
+   
+   Verify installation:
+   ```bash
+   aspire --version  # Should return 13.2.0+{commitSHA} or similar
+   ```
+   
+   See https://aspire.dev/get-started/install-cli/ for details.
 
 3. **Docker Desktop**
    ```bash
