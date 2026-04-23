@@ -25,6 +25,7 @@
 		1433 // SQL Server
 	],
 	// Use 'postCreateCommand' to run commands after the container is created.
+	// Installs Aspire CLI per https://aspire.dev/get-started/install-cli/
 	"postCreateCommand": "curl -sSL https://aspire.dev/install.sh | bash",
 	// Configure tool-specific properties.
 	"customizations": {

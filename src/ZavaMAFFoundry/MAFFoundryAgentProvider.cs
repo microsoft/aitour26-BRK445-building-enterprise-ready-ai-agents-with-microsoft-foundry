@@ -88,7 +88,7 @@ public class MAFFoundryAgentProvider
         var azureOpenAIChatClient =  _projectClient.GetAzureOpenAIChatClient(deploymentName);
 
         // get credentials        
-        DefaultAzureCredential tokenCredential = GetAzureCredentials();
+        AzureCliCredential tokenCredential = GetAzureCliCredentials();
         var endpoint = new Uri(NormalizeEndpoint(azureOpenAIChatClient.Endpoint.AbsoluteUri));
         var azureOpenAIClient = new AzureOpenAIClient(
             endpoint: endpoint,
@@ -108,7 +108,7 @@ public class MAFFoundryAgentProvider
         var azureOpenAIEmbeddingClient = _projectClient.GetAzureOpenAIEmbeddingClient(deploymentName);
 
         // get credentials        
-        DefaultAzureCredential tokenCredential = GetAzureCredentials();
+        AzureCliCredential tokenCredential = GetAzureCliCredentials();
         var endpoint = new Uri(NormalizeEndpoint(azureOpenAIEmbeddingClient.Endpoint.AbsoluteUri));
         var azureOpenAIClient = new AzureOpenAIClient(
             endpoint: endpoint,

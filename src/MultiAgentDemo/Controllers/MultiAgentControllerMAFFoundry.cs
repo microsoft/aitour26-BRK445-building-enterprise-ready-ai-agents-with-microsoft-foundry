@@ -3,8 +3,10 @@ using ZavaAgentsMetadata;
 using Microsoft.Agents.AI.Workflows;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.AI;
+using MultiAgentDemo.Tracing;
 using SharedEntities;
 using System.Text;
+using System.Diagnostics;
 
 namespace MultiAgentDemo.Controllers;
 
@@ -77,7 +79,14 @@ public class MultiAgentControllerMAFFoundry : ControllerBase
         try
         {
             var agents = GetAgents();
-            var workflow = AgentWorkflowBuilder.BuildSequential([
+            // NOTE: Hosted Foundry agents call the Responses API and reject orphan
+            // tool/function-call items at the root. AgentWorkflowBuilder.BuildSequential
+            // forwards the prior agent's raw ChatMessage list, which leaks those items
+            // and produces HTTP 400 invalid_payload on the second agent. We use a
+            // sanitizing builder that converts each hand-off to a plain-text user
+            // message. See MAFFoundrySequentialBuilder for details.
+            var workflow = MAFFoundrySequentialBuilder.BuildSequentialForFoundry(
+            [
                 agents.ProductSearch,
                 agents.ProductMatchmaking,
                 agents.LocationService,
@@ -206,7 +215,7 @@ public class MultiAgentControllerMAFFoundry : ControllerBase
     {
         _logger.LogInformation("MagenticOne workflow requested for query: {ProductQuery}", request?.ProductQuery);
 
-        return StatusCode(501, 
+        return StatusCode(501,
             "The MagenticOne workflow is not yet implemented in the MAF Foundry framework. " +
             "Please use another orchestration type or the LLM direct call mode.");
     }
@@ -214,10 +223,38 @@ public class MultiAgentControllerMAFFoundry : ControllerBase
     /// <summary>
     /// Executes a workflow and processes the streaming events.
     /// </summary>
+    private const string OrchestratorIdentityBanner =
+        "🌐 Using MAF Foundry orchestrator (hosted Microsoft Foundry agents)";
+
     private async Task<MultiAgentResponse> RunWorkflowAsync(MultiAgentRequest request, Workflow workflow)
     {
+        using var orchestrationActivity = MultiAgentWorkflowTracing.ActivitySource.StartActivity(
+            $"Scenario2.{request.Orchestration}.Orchestration",
+            ActivityKind.Internal);
+
+        orchestrationActivity?.SetTag("zava.scenario", 2);
+        orchestrationActivity?.SetTag("zava.orchestration", request.Orchestration.ToString().ToLowerInvariant());
+        orchestrationActivity?.SetTag("zava.product_query", request.ProductQuery);
+
         var orchestrationId = Guid.NewGuid().ToString();
-        var steps = new List<AgentStep>();
+        var startedAt = DateTime.UtcNow;
+        _logger.LogInformation(
+            "{Banner} | OrchestrationId={OrchestrationId} | Pattern={Orchestration}",
+            OrchestratorIdentityBanner, orchestrationId, request.Orchestration);
+
+        orchestrationActivity?.SetTag("zava.orchestration_id", orchestrationId);
+
+        var steps = new List<AgentStep>
+        {
+            new()
+            {
+                Agent = "Orchestrator",
+                AgentId = "maf-foundry-orchestrator",
+                Action = $"Routing {request.Orchestration} request",
+                Result = OrchestratorIdentityBanner,
+                Timestamp = startedAt
+            }
+        };
         string? lastExecutorId = null;
 
         var run = await InProcessExecution.StreamAsync(workflow, request.ProductQuery);
@@ -230,7 +267,7 @@ public class MultiAgentControllerMAFFoundry : ControllerBase
 
         var mermaidChart = workflow.ToMermaidString();
         var agents = GetAgents();
-        
+
         var alternatives = await StepsProcessor.GetProductAlternativesFromStepsAsync(
             steps, agents.ProductMatchmaking, _logger);
         var navigationInstructions = await StepsProcessor.GenerateNavigationInstructionsAsync(
@@ -263,14 +300,14 @@ public class MultiAgentControllerMAFFoundry : ControllerBase
                 if (updateEvent.ExecutorId != lastExecutorId)
                 {
                     lastExecutorId = updateEvent.ExecutorId;
-                    _logger.LogDebug("ExecutorId changed to: {ExecutorId}", updateEvent.ExecutorId);
+                    _logger.LogInformation("Workflow step → executor: {ExecutorId}", updateEvent.ExecutorId);
                 }
                 break;
 
             case WorkflowOutputEvent outputEvent:
-                _logger.LogDebug("WorkflowOutput - SourceId: {SourceId}", outputEvent.SourceId);
+                _logger.LogInformation("Workflow output received from: {SourceId}", outputEvent.SourceId);
                 var messages = outputEvent.As<List<ChatMessage>>() ?? [];
-                
+
                 foreach (var message in messages)
                 {
                     steps.Add(new AgentStep
@@ -282,6 +319,33 @@ public class MultiAgentControllerMAFFoundry : ControllerBase
                         Timestamp = message.CreatedAt?.UtcDateTime ?? DateTime.UtcNow
                     });
                 }
+                break;
+
+            case ExecutorFailedEvent failedEvent:
+                {
+                    var ex = failedEvent.Data as Exception;
+                    _logger.LogError(ex,
+                        "Workflow ExecutorFailedEvent — ExecutorId: {ExecutorId} | Message: {Message} | Inner: {Inner} | Detail: {Detail}",
+                        failedEvent.ExecutorId,
+                        ex?.Message ?? "(no exception)",
+                        ex?.InnerException?.Message ?? "(none)",
+                        ex?.ToString() ?? failedEvent.ToString());
+                    break;
+                }
+
+            case WorkflowErrorEvent errorEvent:
+                {
+                    var ex = errorEvent.Data as Exception;
+                    _logger.LogError(ex,
+                        "Workflow WorkflowErrorEvent — Message: {Message} | Inner: {Inner} | Detail: {Detail}",
+                        ex?.Message ?? "(no exception)",
+                        ex?.InnerException?.Message ?? "(none)",
+                        ex?.ToString() ?? errorEvent.ToString());
+                    break;
+                }
+
+            default:
+                _logger.LogInformation("Workflow event: {EventType}", evt.GetType().Name);
                 break;
         }
     }
@@ -312,7 +376,7 @@ public class MultiAgentControllerMAFFoundry : ControllerBase
             return "Unknown Agent";
 
         var agents = GetAgents();
-        
+
         return agentId switch
         {
             _ when agentId == agents.LocationService.Id => "Location Service Agent",
@@ -328,17 +392,17 @@ public class MultiAgentControllerMAFFoundry : ControllerBase
     /// </summary>
     private static string GetOrchestrationDescription(OrchestrationType orchestration) => orchestration switch
     {
-        OrchestrationType.Sequential => 
+        OrchestrationType.Sequential =>
             "Sequential workflow using Microsoft Agent Framework (Foundry). Each agent step executes in order, with output feeding into subsequent steps.",
-        OrchestrationType.Concurrent => 
+        OrchestrationType.Concurrent =>
             "Concurrent workflow using Microsoft Agent Framework (Foundry). All agents execute in parallel for independent analysis.",
-        OrchestrationType.Handoff => 
+        OrchestrationType.Handoff =>
             "Handoff workflow using Microsoft Agent Framework (Foundry). Agents dynamically pass control based on context and branching logic.",
-        OrchestrationType.GroupChat => 
+        OrchestrationType.GroupChat =>
             "Group chat workflow using Microsoft Agent Framework (Foundry). Agents collaborate in a round-robin conversation pattern.",
-        OrchestrationType.Magentic => 
+        OrchestrationType.Magentic =>
             "MagenticOne-inspired workflow for complex multi-agent collaboration.",
-        _ => 
+        _ =>
             "Multi-agent workflow using Microsoft Agent Framework (Foundry)."
     };
 }

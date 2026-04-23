@@ -1,3 +1,5 @@
+> ⚠️ **DEPRECATED.** The automated console app described in [02.NeededCloudResources.md → Step 4](./02.NeededCloudResources.md#4-create-agents-using-the-console-application) is the canonical agent-deployment path for AI Tour 2026 BRK445. This document is retained for reference only — do **not** use it for first-time setup.
+
 # Manual Agent Deployment Guide
 
 This guide provides step-by-step instructions for manually creating agents in Microsoft Foundry without using the automated console application. Follow these steps if you prefer a manual approach or need to understand the deployment process in detail.
@@ -10,8 +12,8 @@ Before starting manual deployment, ensure you have:
 
 - **Azure subscription** with permission to create resources
 - **Microsoft Foundry access**: <https://ai.azure.com>
-- **AI Foundry project** already created (see [02.NeededCloudResources.md](./02.NeededCloudResources.md) section 2)
-- **Model deployment** configured (e.g., `gpt-4o-mini` or `gpt-4o`) in your AI Foundry project
+- **Microsoft Foundry project** already created (see [02.NeededCloudResources.md](./02.NeededCloudResources.md) section 2)
+- **Model deployment** configured (e.g., `gpt-4o-mini` or `gpt-4o`) in your Microsoft Foundry project
 - **Agent configuration file**: `infra/agents.json` from the repository
 - **Knowledge files**: Located in `infra/docs/` (products, customers, navigation)
 
@@ -88,7 +90,7 @@ infra/docs/
 
 These files are used by: InventoryAgent, ProductMatchmakingAgent, ProductSearchAgent
 
-1. Navigate to your AI Foundry project: <https://ai.azure.com>
+1. Navigate to your Microsoft Foundry project: <https://ai.azure.com>
 2. Go to **Files** section in the left navigation
 3. Click **Upload** and select all 21 product markdown files from `infra/docs/products/`:
    - `product-1.md` through `product-21.md`
@@ -138,7 +140,7 @@ For each of the 8 agents, follow this process:
 
 ### 4.1 Navigate to Agents Section
 
-1. In your AI Foundry project, go to **Agents** in the left navigation
+1. In your Microsoft Foundry project, go to **Agents** in the left navigation
 2. Click **+ New Agent** button
 
 ### 4.2 Configure Basic Agent Properties
@@ -383,9 +385,13 @@ Use this checklist to track your manual deployment progress:
 
 After completing manual agent deployment:
 
-1. Verify all agents appear in your AI Foundry project's Agents section
+1. Verify all agents appear in your Microsoft Foundry project's Agents section
 2. Test each agent with sample prompts to ensure knowledge retrieval works correctly
 3. Configure the Aspire demo application with your Agent IDs
 4. Follow [03.HowToRunDemoLocally.md](./03.HowToRunDemoLocally.md) to run the complete demo solution
 
 For automated deployment, see [02.NeededCloudResources.md](./02.NeededCloudResources.md) section 4 for console application instructions.
+
+---
+
+**Navigation:** [⬅ Back: Needed Cloud Resources](./02.NeededCloudResources.md) | [🏠 Session Delivery Resources](../readme.md)
