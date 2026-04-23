@@ -81,6 +81,7 @@ namespace Microsoft.Extensions.Hosting
                         // Uncomment the following line to enable gRPC instrumentation (requires the OpenTelemetry.Instrumentation.GrpcNetClient package)
                         //.AddGrpcClientInstrumentation()
                         .AddHttpClientInstrumentation()
+                        .AddSource("MultiAgentDemo.Workflows")
                         .AddSource("OpenAI.*")
                         .AddSource("Microsoft.SemanticKernel.*")
                         .AddSource("Microsoft.Extensions.AI.*")
