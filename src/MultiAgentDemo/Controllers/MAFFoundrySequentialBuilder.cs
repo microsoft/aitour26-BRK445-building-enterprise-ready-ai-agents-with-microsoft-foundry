@@ -1,10 +1,12 @@
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Agents.AI;
 using Microsoft.Agents.AI.Workflows;
 using Microsoft.Extensions.AI;
+using MultiAgentDemo.Tracing;
 using MafRouteBuilder = Microsoft.Agents.AI.Workflows.RouteBuilder;
 
 namespace MultiAgentDemo.Controllers;
@@ -60,10 +62,19 @@ internal static class MAFFoundrySequentialBuilder
             options: new ChatForwardingExecutorOptions { StringMessageChatRole = ChatRole.User });
         ExecutorBinding inputAdapterBinding = inputAdapter.BindExecutor();
 
+        var step1Executor = new FoundryTracedStepExecutor(
+            id: "foundry-step-trace-1",
+            stepIndex: 1,
+            stepName: "ProductSearch",
+            agentDisplayName: "Product Search Agent",
+            agentKey: "product-search");
+        ExecutorBinding step1Binding = step1Executor.BindExecutor();
+
         ExecutorBinding firstAgentBinding = agents[0].BindAsExecutor(emitEvents: true);
 
         var builder = new WorkflowBuilder(inputAdapterBinding);
-        builder.AddEdge(inputAdapterBinding, firstAgentBinding);
+        builder.AddEdge(inputAdapterBinding, step1Binding);
+        builder.AddEdge(step1Binding, firstAgentBinding);
 
         ExecutorBinding previous = firstAgentBinding;
         for (int i = 1; i < agents.Count; i++)
@@ -71,10 +82,37 @@ internal static class MAFFoundrySequentialBuilder
             var sanitizer = new FoundryHandoffSanitizingExecutor(id: $"foundry-handoff-sanitizer-{i}");
             ExecutorBinding sanitizerBinding = sanitizer.BindExecutor();
 
+            var stepExecutor = new FoundryTracedStepExecutor(
+                id: $"foundry-step-trace-{i + 1}",
+                stepIndex: i + 1,
+                stepName: i switch
+                {
+                    1 => "ProductMatchmaking",
+                    2 => "LocationService",
+                    3 => "Navigation",
+                    _ => $"Step{i + 1}"
+                },
+                agentDisplayName: i switch
+                {
+                    1 => "Product Matchmaking Agent",
+                    2 => "Location Service Agent",
+                    3 => "Navigation Agent",
+                    _ => $"Agent Step {i + 1}"
+                },
+                agentKey: i switch
+                {
+                    1 => "product-matchmaking",
+                    2 => "location-service",
+                    3 => "navigation",
+                    _ => $"agent-step-{i + 1}"
+                });
+            ExecutorBinding stepBinding = stepExecutor.BindExecutor();
+
             ExecutorBinding nextAgentBinding = agents[i].BindAsExecutor(emitEvents: true);
 
             builder.AddEdge(previous, sanitizerBinding);
-            builder.AddEdge(sanitizerBinding, nextAgentBinding);
+            builder.AddEdge(sanitizerBinding, stepBinding);
+            builder.AddEdge(stepBinding, nextAgentBinding);
 
             previous = nextAgentBinding;
         }
@@ -133,6 +171,58 @@ internal sealed class FoundryHandoffSanitizingExecutor : Executor, IResettableEx
         var combined = sb.Length > 0 ? sb.ToString() : "(previous step produced no textual output)";
         var sanitized = new List<ChatMessage> { new(ChatRole.User, combined) };
         return context.SendMessageAsync(sanitized, cancellationToken);
+    }
+
+    public ValueTask ResetAsync() => default;
+}
+
+/// <summary>
+/// Executor that creates a named activity span for each sequential scenario-2 step
+/// so Aspire traces show explicit cascaded workflow steps with meaningful names.
+/// </summary>
+internal sealed class FoundryTracedStepExecutor : Executor, IResettableExecutor
+{
+    private readonly int _stepIndex;
+    private readonly string _stepName;
+    private readonly string _agentDisplayName;
+    private readonly string _agentKey;
+
+    public FoundryTracedStepExecutor(
+        string id,
+        int stepIndex,
+        string stepName,
+        string agentDisplayName,
+        string agentKey)
+        : base(id, options: null, declareCrossRunShareable: true)
+    {
+        _stepIndex = stepIndex;
+        _stepName = stepName;
+        _agentDisplayName = agentDisplayName;
+        _agentKey = agentKey;
+    }
+
+    protected override MafRouteBuilder ConfigureRoutes(MafRouteBuilder routeBuilder) =>
+        routeBuilder
+            .AddHandler<List<ChatMessage>>((messages, ctx, ct) => ctx.SendMessageAsync(messages, ct))
+            .AddHandler<IEnumerable<ChatMessage>>((messages, ctx, ct) => ctx.SendMessageAsync(messages.ToList(), ct))
+            .AddHandler<ChatMessage[]>((messages, ctx, ct) => ctx.SendMessageAsync(messages.ToList(), ct))
+            .AddHandler<ChatMessage>((message, ctx, ct) => ctx.SendMessageAsync(new List<ChatMessage> { message }, ct))
+            .AddHandler<TurnToken>(ForwardTokenWithTracingAsync);
+
+    private ValueTask ForwardTokenWithTracingAsync(TurnToken token, IWorkflowContext context, CancellationToken cancellationToken)
+    {
+        using var activity = MultiAgentWorkflowTracing.ActivitySource.StartActivity(
+            $"Scenario2.Sequential.Step{_stepIndex}.{_stepName}",
+            ActivityKind.Internal);
+
+        activity?.SetTag("zava.scenario", 2);
+        activity?.SetTag("zava.orchestration", "sequential");
+        activity?.SetTag("zava.step.index", _stepIndex);
+        activity?.SetTag("zava.step.name", _stepName);
+        activity?.SetTag("zava.agent.display_name", _agentDisplayName);
+        activity?.SetTag("zava.agent.key", _agentKey);
+
+        return context.SendMessageAsync(token, cancellationToken);
     }
 
     public ValueTask ResetAsync() => default;
