@@ -228,12 +228,30 @@ public class MultiAgentControllerMAFLocal : ControllerBase
     /// <summary>
     /// Executes a workflow and processes the streaming events.
     /// </summary>
+    private const string OrchestratorIdentityBanner =
+        "💻 Using MAF Local orchestrator (gpt-5-mini local agents)";
+
     private async Task<MultiAgentResponse> RunWorkflowAsync(
         MultiAgentRequest request,
         Workflow workflow)
     {
         var orchestrationId = Guid.NewGuid().ToString();
-        var steps = new List<AgentStep>();
+        var startedAt = DateTime.UtcNow;
+        _logger.LogInformation(
+            "{Banner} | OrchestrationId={OrchestrationId} | Pattern={Orchestration}",
+            OrchestratorIdentityBanner, orchestrationId, request.Orchestration);
+
+        var steps = new List<AgentStep>
+        {
+            new()
+            {
+                Agent = "Orchestrator",
+                AgentId = "maf-local-orchestrator",
+                Action = $"Routing {request.Orchestration} request",
+                Result = OrchestratorIdentityBanner,
+                Timestamp = startedAt
+            }
+        };
         string? lastExecutorId = null;
 
         var run = await InProcessExecution.StreamAsync(workflow, request.ProductQuery);
@@ -278,12 +296,12 @@ public class MultiAgentControllerMAFLocal : ControllerBase
                 if (updateEvent.ExecutorId != lastExecutorId)
                 {
                     lastExecutorId = updateEvent.ExecutorId;
-                    _logger.LogDebug("ExecutorId changed to: {ExecutorId}", updateEvent.ExecutorId);
+                    _logger.LogInformation("Workflow step → executor: {ExecutorId}", updateEvent.ExecutorId);
                 }
                 break;
 
             case WorkflowOutputEvent outputEvent:
-                _logger.LogDebug("WorkflowOutput - SourceId: {SourceId}", outputEvent.SourceId);
+                _logger.LogInformation("Workflow output received from: {SourceId}", outputEvent.SourceId);
                 var messages = outputEvent.As<List<ChatMessage>>() ?? [];
 
                 foreach (var message in messages)
@@ -296,6 +314,33 @@ public class MultiAgentControllerMAFLocal : ControllerBase
                         Timestamp = message.CreatedAt?.UtcDateTime ?? DateTime.UtcNow
                     });
                 }
+                break;
+
+            case ExecutorFailedEvent failedEvent:
+            {
+                var ex = failedEvent.Data as Exception;
+                _logger.LogError(ex,
+                    "Workflow ExecutorFailedEvent — ExecutorId: {ExecutorId} | Message: {Message} | Inner: {Inner} | Detail: {Detail}",
+                    failedEvent.ExecutorId,
+                    ex?.Message ?? "(no exception)",
+                    ex?.InnerException?.Message ?? "(none)",
+                    ex?.ToString() ?? failedEvent.ToString());
+                break;
+            }
+
+            case WorkflowErrorEvent errorEvent:
+            {
+                var ex = errorEvent.Data as Exception;
+                _logger.LogError(ex,
+                    "Workflow WorkflowErrorEvent — Message: {Message} | Inner: {Inner} | Detail: {Detail}",
+                    ex?.Message ?? "(no exception)",
+                    ex?.InnerException?.Message ?? "(none)",
+                    ex?.ToString() ?? errorEvent.ToString());
+                break;
+            }
+
+            default:
+                _logger.LogInformation("Workflow event: {EventType}", evt.GetType().Name);
                 break;
         }
     }

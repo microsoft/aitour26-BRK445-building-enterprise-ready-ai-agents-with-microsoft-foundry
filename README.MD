@@ -21,7 +21,7 @@ If you are delivering this session, check the `session-delivery-resources/` fold
 In this session you will learn practical techniques to:
 
 - Design agent architectures that separate reasoning, tools, and orchestration
-- Integrate Microsoft Foundry (Azure AI Studio) services with local microservices
+- Integrate Microsoft Foundry services with local microservices
 - Add safety, evaluation, and observability to generative AI agents
 - Package and run multi-service demos locally and in Azure
 
@@ -40,8 +40,8 @@ Developers, architects, and AI engineers who build production-grade agentic appl
 
 The devcontainer is configured to:
 
-- ✅ Install .NET 10 SDK and Aspire workloads
-- ✅ Install Aspire CLI tool
+- ✅ Install .NET 10 SDK
+- ✅ Install Aspire CLI (via `https://aspire.dev/install.sh` or `https://aspire.dev/install.ps1`)
 
 #### Troubleshooting (Windows + WSL + Docker Desktop)
 
@@ -72,7 +72,7 @@ After applying the fix, you can verify the mount service exists by running in a 
 
 ### Agent Frameworks and Working modes
 
-This solution demonstrates multiple working modes and agent integration patterns. The available working modes are implemented in `src/ZavaWorkingModes/WorkingMode.cs` and include direct HTTP calls, LLM direct call, Microsoft Agent Framework (MAF) with Microsoft Foundry, AI Foundry variants, and local agent modes.
+This solution demonstrates multiple working modes and agent integration patterns. The available working modes are implemented in `src/ZavaWorkingModes/WorkingMode.cs` and include direct HTTP calls, LLM direct call, Microsoft Agent Framework (MAF) with Microsoft Foundry, Microsoft Foundry variants, and local agent modes.
 
 The recommended developer flow uses the Aspire AppHost and the solution `src/BRK445-Zava-Aspire.slnx`. Use the Store frontend Settings page to switch working modes; selections are saved to browser `localStorage` and take effect immediately.
 
@@ -107,6 +107,22 @@ Check the [Session Delivery Resources folder](./session-delivery-resources/) for
     </td>
 
 </tr></table>
+
+## 🚀 Try Azure for Free!
+
+You might need an Azure subscription to follow the steps in this repo. 👉 Start your free journey here: https://aka.ms/devrelft 
+
+This Azure Free Trial provides $200 credit for 30 days. Some features may incur costs after the trial. Check the <a href="https://azure.microsoft.com/pricing/calculator/">Azure pricing calculator</a> to estimate costs.
+
+> [!IMPORTANT]
+> **Free Tier Limitations:** The Azure free subscription has significant constraints that may prevent full implementation of this repo:
+> - **Model access:** Some advanced models (e.g., GPT-5, Claude) may not be available or have very limited quotas
+> - **Rate limits:** Strict API call limits (e.g., requests per minute, tokens per day)
+> - **Region restrictions:** Free tier resources may only be available in limited regions
+> - **Feature restrictions:** Some Microsoft Foundry features (agent orchestration, evaluations) may require pay-as-you-go
+> - **Credit exhaustion:** $200 credit can be consumed quickly with heavy AI model usage
+>
+> **Recommendation:** For full functionality, consider a **pay-as-you-go** subscription or request access to <a href="https://azure.microsoft.com/free/students/">Azure for Students</a> ($100 credit, no credit card required) or the <a href="https://www.microsoft.com/startups">Microsoft for Startups Founders Hub</a>.
 
 ## Responsible AI
 

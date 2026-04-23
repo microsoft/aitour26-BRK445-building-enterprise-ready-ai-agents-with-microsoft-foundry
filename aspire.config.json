@@ -1,0 +1,6 @@
+{
+  "appHost": {
+    "path": "src/ZavaAppHost/ZavaAppHost.csproj",
+    "language": "csharp"
+  }
+}
