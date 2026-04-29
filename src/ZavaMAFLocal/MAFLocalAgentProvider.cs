@@ -140,7 +140,7 @@ public static class MAFLocalAgentExtensions
             });
 
         
-        // Register the workflow as a keyed singleton
+        // Register the Concurrent workflow as a keyed singleton
         builder.AddWorkflow("ConcurrentWorkflow", (sp, key) =>
         {
             var workFlowName = "ConcurrentWorkflow";
@@ -161,6 +161,66 @@ public static class MAFLocalAgentExtensions
                 navigationAgent]);
             return workflow;
         });
+
+        // Register the HandOff workflow as a keyed singleton
+        builder.AddWorkflow("HandOffWorkflow", (sp, key) =>
+        {
+            var workFlowName = "HandOffWorkflow";
+
+            logger?.LogInformation($"Creating MAF Local workflow: {workFlowName} - Type: HandOff");
+
+            // create agent
+            var localAgentProvider = sp.GetRequiredService<MAFLocalAgentProvider>();
+            var productSearchAgent = localAgentProvider.GetLocalAgentByName(AgentType.ProductSearchAgent);
+            var productMatchmakingAgent = localAgentProvider.GetLocalAgentByName(AgentType.ProductMatchmakingAgent);
+            var locationServiceAgent = localAgentProvider.GetLocalAgentByName(AgentType.LocationServiceAgent);
+            var navigationAgent = localAgentProvider.GetLocalAgentByName(AgentType.NavigationAgent);
+
+            var workflow = AgentWorkflowBuilder.CreateHandoffBuilderWith(productSearchAgent)
+                .WithHandoff(productSearchAgent, productMatchmakingAgent)
+                .WithHandoff(productMatchmakingAgent, locationServiceAgent)
+                .WithHandoff(locationServiceAgent, navigationAgent)
+                .Build();
+
+            // hack to avoid DevUI triggering exception about missing name in workflow
+            workflow.SetName(workFlowName);
+
+            return workflow;
+        });
+
+        // Register the GroupChat workflow as a keyed singleton
+        builder.AddWorkflow("GroupChatWorkflow", (sp, key) =>
+        {
+            var workFlowName = "GroupChatWorkflow";
+
+            logger?.LogInformation($"Creating MAF Local workflow: {workFlowName} - Type: GroupChat");
+
+            // create agent
+            var localAgentProvider = sp.GetRequiredService<MAFLocalAgentProvider>();
+            var productSearchAgent = localAgentProvider.GetLocalAgentByName(AgentType.ProductSearchAgent);
+            var productMatchmakingAgent = localAgentProvider.GetLocalAgentByName(AgentType.ProductMatchmakingAgent);
+            var locationServiceAgent = localAgentProvider.GetLocalAgentByName(AgentType.LocationServiceAgent);
+            var navigationAgent = localAgentProvider.GetLocalAgentByName(AgentType.NavigationAgent);
+
+            var agentList = new List<AIAgent>
+            {
+                productSearchAgent,
+                productMatchmakingAgent,
+                locationServiceAgent,
+                navigationAgent
+            };
+
+            var workflow = AgentWorkflowBuilder.CreateGroupChatBuilderWith(
+                _ => new RoundRobinGroupChatManager(agentList) { MaximumIterationCount = 5 })
+                .AddParticipants(agentList)
+                .Build();
+
+            // hack to avoid DevUI triggering exception about missing name in workflow
+            workflow.SetName(workFlowName);
+
+            return workflow;
+        });
+
         return builder;
     }
 }

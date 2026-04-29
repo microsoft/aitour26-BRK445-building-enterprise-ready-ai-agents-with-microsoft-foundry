@@ -4,6 +4,7 @@ using SharedEntities;
 using System.Text.Json;
 using ZavaAgentsMetadata;
 using ZavaMAFLocal;
+using ZavaMAFOllama;
 
 namespace LocationService.Controllers;
 
@@ -13,19 +14,22 @@ public class LocationController : ControllerBase
 {
     private readonly ILogger<LocationController> _logger;
     private readonly AIAgent _agentFxAgent;
+    private readonly AIAgent _ollamaAgent;
     private readonly DataServiceClient.DataServiceClient _dataServiceClient;
 
     public LocationController(
         ILogger<LocationController> logger,        
         DataServiceClient.DataServiceClient dataServiceClient,
-        MAFLocalAgentProvider localAgentProvider)
+        MAFLocalAgentProvider localAgentProvider,
+        MAFOllamaAgentProvider ollamaAgentProvider)
     {
         _logger = logger;
         _dataServiceClient = dataServiceClient;
         _agentFxAgent = localAgentProvider.GetAgentByName(AgentMetadata.GetAgentName(AgentType.LocationServiceAgent));
+        _ollamaAgent = ollamaAgentProvider.GetAgentByName(AgentMetadata.GetAgentName(AgentType.LocationServiceAgent));
     }
 
-    [HttpGet("find/llm")]
+    [HttpGet("analyze_find/llm")]
     public async Task<ActionResult<LocationResult>> FindProductLocationLlmAsync([FromQuery] string product, CancellationToken cancellationToken)
     {
         _logger.LogInformation($"{AgentMetadata.LogPrefixes.Llm} Finding location for product: {{Product}}", product);
@@ -38,7 +42,7 @@ public class LocationController : ControllerBase
             cancellationToken);
     }
 
-    [HttpGet("find/maf")]  // Using constant AgentMetadata.FrameworkIdentifiers.Maf
+    [HttpGet("analyze_find/maf")]  // Using constant AgentMetadata.FrameworkIdentifiers.Maf
     public async Task<ActionResult<LocationResult>> FindProductLocationMAFAsync([FromQuery] string product, CancellationToken cancellationToken)
     {
         _logger.LogInformation($"{AgentMetadata.LogPrefixes.Maf} Finding location for product: {{Product}}", product);
@@ -47,6 +51,18 @@ public class LocationController : ControllerBase
             product,
             InvokeAgentFrameworkAsync,
             AgentMetadata.LogPrefixes.Maf,
+            cancellationToken);
+    }
+
+    [HttpGet("analyze_find/maf_ollama")]  // Using constant AgentMetadata.FrameworkIdentifiers.MafOllama
+    public async Task<ActionResult<LocationResult>> FindProductLocationMAFOllamaAsync([FromQuery] string product, CancellationToken cancellationToken)
+    {
+        _logger.LogInformation($"{AgentMetadata.LogPrefixes.MafOllama} Finding location for product: {{Product}}", product);
+
+        return await FindProductLocationAsync(
+            product,
+            InvokeOllamaAgentAsync,
+            AgentMetadata.LogPrefixes.MafOllama,
             cancellationToken);
     }
 
@@ -95,6 +111,15 @@ public class LocationController : ControllerBase
 
         var thread = _agentFxAgent.GetNewThread();
         var response = await _agentFxAgent.RunAsync(prompt, thread);
+        return response?.Text ?? string.Empty;
+    }
+
+    private async Task<string> InvokeOllamaAgentAsync(string prompt, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var thread = _ollamaAgent.GetNewThread();
+        var response = await _ollamaAgent.RunAsync(prompt, thread);
         return response?.Text ?? string.Empty;
     }
 

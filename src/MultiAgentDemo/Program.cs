@@ -2,6 +2,7 @@ using Microsoft.Agents.AI.DevUI;
 using MultiAgentDemo.Services;
 using ZavaMAFLocal;
 using ZavaMAFFoundry;
+using ZavaMAFOllama;
 using DataServiceClient;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -24,6 +25,12 @@ builder.AddMAFLocalAgents();
 
 // add workflows
 builder.AddMAFLocalWorkflows();
+
+// Register MAF Ollama agents (locally created with Ollama)
+builder.AddMAFOllamaAgents();
+
+// add Ollama workflows
+builder.AddMAFOllamaWorkflows();
 
 // Register HTTP clients for external services (used by LLM direct call and DirectCall modes)
 RegisterHttpClients(builder);

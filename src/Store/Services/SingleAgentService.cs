@@ -47,6 +47,7 @@ public class SingleAgentService
                 WorkingMode.Llm => "llm",
                 WorkingMode.MafFoundry => "maf_foundry",
                 WorkingMode.MafLocal => "maf_local",
+                WorkingMode.MafOllama => "maf_ollama",
                 _ => "maf_foundry"
             };
             var endpoint = $"/api/singleagent/{frameworkPath}/analyze";

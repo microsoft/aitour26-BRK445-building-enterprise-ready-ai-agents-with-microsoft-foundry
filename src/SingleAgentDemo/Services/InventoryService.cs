@@ -32,11 +32,12 @@ public class InventoryService
     {
         return framework switch
         {
-            AgentMetadata.FrameworkIdentifiers.MafLocal => "searchmaf_local",
-            AgentMetadata.FrameworkIdentifiers.MafFoundry => "searchmaf_foundry",
-            AgentMetadata.FrameworkIdentifiers.Llm => "search_llm",
-            AgentMetadata.FrameworkIdentifiers.DirectCall => "search_directcall",
-            _ => "searchmaf_local" // Default fallback
+            AgentMetadata.FrameworkIdentifiers.MafLocal => "analyze_search_maf_local",
+            AgentMetadata.FrameworkIdentifiers.MafFoundry => "analyze_search_maf_foundry",
+            AgentMetadata.FrameworkIdentifiers.MafOllama => "analyze_search_maf_ollama",
+            AgentMetadata.FrameworkIdentifiers.Llm => "analyze_search_llm",
+            AgentMetadata.FrameworkIdentifiers.DirectCall => "analyze_search_direct_call",
+            _ => "analyze_search_maf_local" // Default fallback
         };
     }
 
@@ -52,12 +53,12 @@ public class InventoryService
             var searchRequest = new InventorySearchRequest { SearchQuery = searchQuery };
             
             var endpointName = GetEndpointForFramework(_framework);
-            var endpoint = $"/api/Inventory/{endpointName}";
+            var endpoint = $"/api/inventory/{endpointName}";
             _logger.LogInformation($"[InventoryService] Calling endpoint: {endpoint}");
             
-            // Create a cancellation token with a 15-second timeout
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
-            var response = await _httpClient.PostAsJsonAsync(endpoint, searchRequest, cts.Token);
+            //// Create a cancellation token with a 15-second timeout
+            //using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            var response = await _httpClient.PostAsJsonAsync(endpoint, searchRequest);
             
             _logger.LogInformation($"InventoryService HTTP status code: {response.StatusCode}");
             

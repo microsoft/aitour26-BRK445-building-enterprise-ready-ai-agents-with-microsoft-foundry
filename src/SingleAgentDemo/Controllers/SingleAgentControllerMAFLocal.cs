@@ -41,10 +41,10 @@ public class SingleAgentControllerMAFLocal : ControllerBase
         _inventoryService = inventoryService;
 
         // Set framework for all services to use maf_local endpoints
-        _analyzePhotoService.SetFramework(AgentMetadata.FrameworkIdentifiers.MafLocal);
-        _customerInformationService.SetFramework(AgentMetadata.FrameworkIdentifiers.MafLocal);
-        _toolReasoningService.SetFramework(AgentMetadata.FrameworkIdentifiers.MafLocal);
-        _inventoryService.SetFramework(AgentMetadata.FrameworkIdentifiers.MafLocal);
+        _analyzePhotoService.SetFramework(AgentMetadata.FrameworkIdentifiers.DirectCall);
+        _customerInformationService.SetFramework(AgentMetadata.FrameworkIdentifiers.DirectCall);
+        _toolReasoningService.SetFramework(AgentMetadata.FrameworkIdentifiers.DirectCall);
+        _inventoryService.SetFramework(AgentMetadata.FrameworkIdentifiers.DirectCall);
 
         // Create tools that call HTTP services
         _tools =

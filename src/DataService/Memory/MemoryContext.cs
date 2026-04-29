@@ -8,14 +8,20 @@ using SharedEntities;
 using System.Text;
 using VectorEntities;
 using ZavaDatabaseInitialization;
+using ZavaWorkingModes;
 
 namespace DataService.Memory;
 
 public class MemoryContext
 {
     private ILogger _logger;
-    private readonly IChatClient? _chatClient;
-    private readonly IEmbeddingGenerator<string, Embedding<float>>? _embeddingGenerator;
+    private IChatClient? _chatClient;
+    private IEmbeddingGenerator<string, Embedding<float>>? _embeddingGenerator;
+    private readonly IChatClient? _ollamaChatClient;
+    private readonly IEmbeddingGenerator<string, Embedding<float>>? _ollamaEmbeddingGenerator;
+    private readonly IChatClient? _defaultChatClient;
+    private readonly IEmbeddingGenerator<string, Embedding<float>>? _defaultEmbeddingGenerator;
+
     private VectorStoreCollection<int, ProductVector>? _productsCollection;
     private string _systemPrompt = "";
     private bool _isMemoryCollectionInitialized = false;
@@ -23,15 +29,21 @@ public class MemoryContext
     public MemoryContext(
         ILogger logger,
         IChatClient? chatClient,
-        IEmbeddingGenerator<string, Embedding<float>>? embeddingGenerator)
+        IEmbeddingGenerator<string, Embedding<float>>? embeddingGenerator,
+        [FromKeyedServices("ollama")] IChatClient ollamaChatClient,
+        [FromKeyedServices("ollama")] IEmbeddingGenerator<string, Embedding<float>>? ollamaEmbeddingGenerator)
     {
         _logger = logger;
         _chatClient = chatClient;
         _embeddingGenerator = embeddingGenerator;
 
+        _defaultChatClient = chatClient;
+        _defaultEmbeddingGenerator = embeddingGenerator;
+
+        _ollamaChatClient = ollamaChatClient;
+        _ollamaEmbeddingGenerator = ollamaEmbeddingGenerator;
+
         _logger.LogInformation("Memory context created");
-        _logger.LogInformation($"Chat Client is null: {_chatClient is null}");
-        _logger.LogInformation($"Embedding Generator is null: {_embeddingGenerator is null}");
     }
 
     public async Task<bool> InitMemoryContextAsync(Context db)
@@ -84,8 +96,24 @@ public class MemoryContext
         return true;
     }
 
-    public virtual async Task<SearchResponse> Search(string search, Context db)
+    public virtual async Task<SearchResponse> Search(
+        string search, 
+        Context db, 
+        WorkingMode workingMode = WorkingMode.MafLocal)
     {
+        if(workingMode == WorkingMode.MafOllama)
+        {
+            _logger.LogInformation("Using Ollama chat client and embedding generator");
+            _chatClient = _ollamaChatClient;
+            _embeddingGenerator = _ollamaEmbeddingGenerator;
+        }
+        else
+        {
+            _logger.LogInformation("Using default chat client and embedding generator");
+            _chatClient = _defaultChatClient;
+            _embeddingGenerator = _defaultEmbeddingGenerator;
+        }
+
         if (!_isMemoryCollectionInitialized)
         {
             await InitMemoryContextAsync(db);
